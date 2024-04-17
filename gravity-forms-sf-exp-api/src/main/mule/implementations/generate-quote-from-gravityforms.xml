@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	
+	<flow name="generate-quote-from-gravityformsFlow" doc:id="adf393ac-06e8-4f2d-87fc-18f8b2685e77" >
+		<logger level="INFO" doc:name="Prinitng Payload" doc:id="1211ea3f-48ea-4bcc-8687-45a0a9f511b5" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"Message": "Recieved the data successfully from Gravity Form",&#10;	"payload": payload&#10;}]'/>
+		<ee:transform doc:name="setting payload" doc:id="c5647b01-1c19-45e9-90c6-058d8c8d469e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::util::Values
+output application/json
+fun objectify(value: Any) = 
+    (value splitBy "\n\n" map ($ splitBy ":")) reduce ((item, obj ={}) -> if(sizeOf(item) > 1)(obj ++ {(item[0]): trim(item[1])})else obj ++{})
+---
+payload update field("kuvio") with (if(payload.kuvio != "")(payload.kuvio splitBy "---" map(objectify($))) else []) update field("decor") with (if(payload.decor != "")(payload.decor splitBy "---" map(objectify($)))else [])]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<until-successful maxRetries="5" doc:name="Until Successful" doc:id="5a131d98-11bd-4150-ad86-44e8d5a846cf" >
+			<http:request method="${sfdc.sapi.generateQuote.method}" doc:name="Request" doc:id="de5be615-0209-4a99-bc08-2b31981200d7" config-ref="HTTP_Request_configuration" path="${sfdc.sapi.generateQuote.path}" responseTimeout="1800000">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	client_secret : p('secure::sfdc.sapi.client_secret'),
+	client_id : p('secure::sfdc.sapi.client_id')
+}]]]></http:headers>
+		</http:request>
+		</until-successful>
+		<logger level="INFO" doc:name="printing payload" doc:id="dc8085ee-6447-4066-b9ca-db0b7a87f286" message="#[%dw 2.0&#10;output application/json&#10;---&#10;payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="46a669cf-7fc9-40fb-a2d4-6afdebfb36e8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

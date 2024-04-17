@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	<configuration-properties doc:name="Configuration properties" doc:id="51ebc7fe-752e-4da2-a316-77449f6201f0" file="properties\common-config.yaml" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="a1cfcc74-acf0-4873-bfae-5e126ceb4416" file="properties\config-secure-${mule.env}.yaml" key="${secure.key}" >
+		<secure-properties:encrypt algorithm="Blowfish" />
+	</secure-properties:config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="c3b4a8f5-9c64-4043-927c-3eb0f1017228" basePath="${sfdc.sapi.basepath}" >
+		<http:request-connection protocol="${sfdc.sapi.protocol}" host="${sfdc.sapi.host}" />
+		<http:default-headers >
+			<http:default-header key="x-correlation-id" value="#[correlationId]" />
+		</http:default-headers>
+	
+</http:request-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="514a4ee6-47e4-45c9-9570-25178fe7edda" file="properties\config-${mule.env}.yaml" />
+	<api-gateway:autodiscovery apiId="19417198" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="233e8317-f0bc-4442-9387-d971891a9e41" flowRef="gravityforms-quoterequest-exp-api-main" /> 
+</mule>

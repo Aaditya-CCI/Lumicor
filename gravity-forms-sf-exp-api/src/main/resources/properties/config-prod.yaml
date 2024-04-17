@@ -1,0 +1,9 @@
+sfdc: 
+  sapi:
+    protocol: "HTTPS"
+    host: ""
+    port: ""
+    basepath: "/api"
+    generateQuote:
+      method: "POST"
+      path: "/generate-quote"

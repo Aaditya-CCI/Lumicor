@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_ede9d704_a216_49e1_b08a_f0bd32bde405_Output_Variables_quoteNumber = String | Null
+

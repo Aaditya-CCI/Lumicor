@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<flow name="products-creationFlow"
+		doc:id="ede9d704-a216-49e1-b08a-f0bd32bde405">
+		<ee:transform doc:name="Transform Message"
+			doc:id="8ae804e9-7198-427e-bd1e-f3e7be6ac70b">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="compQueryRes"><![CDATA[%dw 2.0
+output application/json
+---
+vars.compQueryRes]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<validation:is-false doc:name="Is false"
+			doc:id="924c4947-2250-4027-80da-cc45c0d1dc9c"
+			expression="#[vars.compQueryRes.compositeResponse.httpStatusCode contains  (400)]"
+			message='#["Failed to execute the composite request"]' />
+		<ee:transform doc:name="QuoteId"
+			doc:id="38a8b2ce-b76f-48a7-b5cd-c45c8ecae3f5">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="quoteId"><![CDATA[%dw 2.0
+output application/json
+---
+(vars.compQueryRes.compositeResponse filter $.referenceId == "refQuote")[0].body.id]]></ee:set-variable>
+				<ee:set-variable variableName="decorRecords"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"success": [],
+	"failure": []
+}]]></ee:set-variable>
+				<ee:set-variable variableName="kuvioRecords"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"success": [],
+	"failure": []
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<scatter-gather doc:name="Scatter-Gather"
+			doc:id="a8faf537-85d8-4d56-8aab-4fe8153ebe01">
+			<route>
+				<foreach doc:name="For Each for Kuvio Tiles"
+					doc:id="c6b40273-8971-487b-8874-44a5c7f4e42f"
+					collection="#[payload.kuvio]">
+					<set-variable
+						value='#["Kuvio, " ++ payload.Shape ++ ", " ++ payload.Finish]'
+						doc:name="productName"
+						doc:id="f3f51b65-b345-490a-9123-7beccf377522"
+						variableName="productName" />
+					<salesforce:query doc:name="Query"
+						doc:id="0864bbd2-3210-459e-8bb7-e23b403a0837"
+						config-ref="Salesforce_Config" target="productId"
+						targetValue="#[payload[0].Id]">
+						<salesforce:salesforce-query><![CDATA[select Name, Id from Product2 where Kuvio_Tiles_Shape__c = ':shape' and Kuvio_Tiles_Finish__c = ':finish' ]]></salesforce:salesforce-query>
+						<salesforce:parameters><![CDATA[#[{
+	shape: payload.Shape,
+	finish: payload.Finish
+}]]]></salesforce:parameters>
+					</salesforce:query>
+					<choice doc:name="Choice"
+						doc:id="31102eb8-bba9-4416-835f-6874572ff01b">
+						<when expression="#[vars.productId != null]">
+							<logger level="INFO" doc:name="creating-quote-line-for-found-product" doc:id="7ae7572f-8b27-4a86-b0ab-911acd79931e" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Creating quote line for product",&#10;	product: payload&#10;}]'/>
+							<ee:transform doc:name="payload --&gt; QuoteLine"
+								doc:id="aa4b8130-abfc-4bbe-b21c-251043b88a50">
+								<ee:message>
+									<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	SBQQ__Product__c: vars.productId,
+	SBQQ__Quote__c: vars.quoteId,
+	Case_Quantity__c: payload."Case Quantity"
+}]]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<until-successful maxRetries="5" doc:name="Until Successful" doc:id="c7e10b0e-30df-4057-b75f-e3927a6b4e06">
+								<salesforce:create doc:name="Create" doc:id="44295c7b-e8aa-4270-ac80-604a42e0c747" config-ref="Salesforce_Config" type="SBQQ__QuoteLine__c" target="createRes"/>
+								<validation:is-false doc:name="Is false" doc:id="f4e72a47-9874-47c2-8266-565f82069749" expression="#[vars.createRes.successful == false]" message='#["Failed while entering record in quote line"]' />
+							</until-successful>
+							<ee:transform doc:name="RecordUpdation"
+								doc:id="bb93013d-8afa-46ef-aea6-bf0c48242d05">
+								<ee:message>
+								</ee:message>
+								<ee:variables>
+									<ee:set-variable variableName="kuvioRecords"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"success": vars.kuvioRecords.success ++ [vars.productName ++ " " ++ vars.productId],
+	"failure": vars.kuvioRecords.failure ++ []
+}]]></ee:set-variable>
+								</ee:variables>
+							</ee:transform>
+						
+</when>
+						<otherwise>
+							<logger level="INFO" doc:name="creating-dummy-sku-quote-line"
+								doc:id="e9b5b680-7ee7-4758-a49c-8f1ccad2e696"
+								message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Kuvio Product not found",&#10;	product: payload&#10;}]' />
+							<salesforce:query
+								doc:name="Fetch Id of DummySKU"
+								doc:id="ba5fa66c-9559-4a2c-9d5b-412d7112670f"
+								config-ref="Salesforce_Config" target="dummyProductId"
+								targetValue="#[payload[0].Id]">
+								<salesforce:salesforce-query><![CDATA[select Name, id from Product2 where Name = 'Dummy SKU'
+]]></salesforce:salesforce-query>
+							</salesforce:query>
+							<validation:is-false doc:name="Is false"
+								doc:id="5cd60c24-7004-476e-b94c-2215d0e4332e"
+								expression="#[vars.dummyProductId == null]"
+								message='#["Dummy Product not found in Salesforce"]' />
+							<ee:transform
+								doc:name="payload for non existing product"
+								doc:id="4580729d-4f74-4ed7-b178-7067f5ac7a26">
+								<ee:message>
+									<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	SBQQ__Product__c: vars.dummyProductId,
+	SBQQ__Quote__c: vars.quoteId,
+	Product_Detail__c: vars.productName,
+	Case_Quantity__c: payload."Case Quantity"
+}]]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<until-successful maxRetries="5"
+								doc:name="Until Successful"
+								doc:id="6f409cd4-d78b-4730-89ee-498639909537">
+								<salesforce:create type="SBQQ__QuoteLine__c"
+									doc:name="Create" doc:id="628b5929-140c-45fc-979a-4300c8258fd9"
+									config-ref="Salesforce_Config" />
+								<validation:is-false doc:name="Is false"
+									doc:id="3c69cec0-1c45-4a07-966a-dcf1e0e850e4"
+									expression="#[payload.successful == false]"
+									message='#["Failed while entering record in quote line"]' />
+							</until-successful>
+							<ee:transform doc:name="RecordUpdation"
+								doc:id="7e059bd2-a329-40e9-b769-24ff85539b30">
+								<ee:message>
+								</ee:message>
+								<ee:variables>
+									<ee:set-variable variableName="kuvioRecords"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"success": vars.kuvioRecords.success ++ [],
+	"failure": vars.kuvioRecords.failure ++ [vars.productName]
+}]]></ee:set-variable>
+								</ee:variables>
+							</ee:transform>
+						</otherwise>
+					</choice>
+				</foreach>
+			</route>
+			<route>
+				<foreach doc:name="For Each for Decor "
+					doc:id="150b240f-f41b-4c1f-b437-f18b8526630b"
+					collection="#[payload.decor]">
+					<set-variable
+						value='#[([payload."Décor"] ++ [payload.Gauge] ++ [payload."Resin Type"] ++ [payload."Panel Size"]) joinBy  ", "]'
+						doc:name="productName"
+						doc:id="1107f7ef-730a-4a29-afe8-3285dc509a5b"
+						variableName="productName" />
+					<salesforce:query doc:name="Query"
+						doc:id="d31e60e1-2769-44e5-9af3-de6cc4ccd6c2"
+						config-ref="Salesforce_Config" target="productId"
+						targetValue="#[payload[0].Id]">
+						<salesforce:salesforce-query><![CDATA[select Name, Id from Product2 where Decor__c = ':decor' and Decor_Gauge__c =':gauge' and Decor_Panel_Size__c like ':panelSize' and Decor_Resin_Back_Finish__c =':backFinish' and Decor_Resin_Front_Finish__c =':frontFinish' and Decor_ResinType__c =':resinType' and Chemshield__c =:chemshield and Illume__c =:illume and Luminous__c =:luminous and Marker_Board__c =:markerboard and Opaque__c =:opaque and Reflective_Finishes__c =:reflectiveFinishes]]></salesforce:salesforce-query>
+						<salesforce:parameters><![CDATA[#[{
+	decor: payload."Décor",
+	gauge: payload.Gauge,
+	panelSize: "%" ++ payload."Panel Size" ++ "%",
+	backFinish: payload."Resin Back Finish",
+	frontFinish: payload."Resin Front Finish",
+	resinType: payload."Resin Type",
+	chemshield: if (payload.AddOns contains "ChemShield") true else false,
+    illume:  if(payload.AddOns contains "Illume") true else false,
+    luminous:   if(payload.AddOns contains  "Luminous") true else false,
+    markerboard:   if(payload.AddOns contains "Marker Board") true else false,
+    opaque:  if(payload.AddOns contains "Opaque") true else false,
+    reflectiveFinishes:  if(payload.AddOns contains "Reflective Finishes") true else false
+}]]]></salesforce:parameters>
+					</salesforce:query>
+					<choice doc:name="Choice"
+						doc:id="4a43a9b3-8960-4cf8-8a8a-ac55e616d502">
+						<when expression="#[vars.productId != null]">
+							<logger level="INFO" doc:name="creating-quote-line-for-found-product" doc:id="c27ebe11-e5c7-419f-a1fe-9d93ff39738e" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Creating quote line for product",&#10;	product: payload&#10;}]'/>
+							<ee:transform doc:name="payload --&gt; QuoteLine"
+								doc:id="918a2069-0cf6-4142-bb67-d60f8975e111">
+								<ee:message>
+									<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	SBQQ__Product__c: vars.productId,
+	SBQQ__Quote__c: vars.quoteId,
+	Case_Quantity__c: payload."Panel Quantity"
+}]]]></ee:set-payload>
+								</ee:message>
+								<ee:variables>
+								</ee:variables>
+							</ee:transform>
+							<until-successful maxRetries="5" doc:name="Until Successful" doc:id="212a68cb-7637-4cda-9cbb-c453aa57baef" >
+								<salesforce:create doc:name="Create" doc:id="6d60ec16-578c-4985-afee-b59fed89a5ad" config-ref="Salesforce_Config" type="SBQQ__QuoteLine__c" target="createRes">
+							</salesforce:create>
+								<validation:is-false doc:name="Is false" doc:id="1d4faabb-8d30-4f02-86d8-4a9552ab1b12" expression="#[vars.createRes.successful == false]" message='#["Failed while entering record in quote line"]'/>
+							</until-successful>
+							<ee:transform doc:name="RecordUpdation"
+								doc:id="07ef9286-ae14-4888-9454-cae7388d298f">
+								<ee:message>
+								</ee:message>
+								<ee:variables>
+									<ee:set-variable variableName="decorRecords"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"success": vars.decorRecords.success ++ [vars.productName ++ " " ++ vars.productId],
+	"failure": vars.decorRecords.failure ++ []
+}]]></ee:set-variable>
+								</ee:variables>
+							</ee:transform>
+						
+</when>
+						<otherwise>
+							<logger level="INFO" doc:name="creating-dummy-sku-quote-line"
+								doc:id="8097a5fb-8409-43f1-a5fd-20e6121e89c2"
+								message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;    message: "Decor Product not found",&#10;    product: payload&#10;}]' />
+							<salesforce:query
+								doc:name="Fetch Id of DummySKU"
+								doc:id="665f6a6b-1c57-4e75-b1bb-42b22fe3e592"
+								config-ref="Salesforce_Config" target="dummyProductId"
+								targetValue="#[payload[0].Id]">
+								<salesforce:salesforce-query><![CDATA[select Name, id from Product2 where Name = 'Dummy SKU'
+]]></salesforce:salesforce-query>
+							</salesforce:query>
+							<validation:is-false doc:name="Is false"
+								doc:id="9cf57e84-8e35-4ba3-83cd-72dd2803e8d4"
+								expression="#[vars.dummyProductId == null]"
+								message='#["Dummy Product not found in Salesforce"]' />
+							<ee:transform
+								doc:name="payload for non existing product"
+								doc:id="2cee33e9-ba9f-4a30-abe9-ac0bf06cb677">
+								<ee:message>
+									<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	SBQQ__Product__c: vars.dummyProductId,
+	SBQQ__Quote__c: vars.quoteId,
+	Product_Detail__c: vars.productName,
+	Case_Quantity__c: payload."Panel Quantity"
+}]]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<until-successful maxRetries="5"
+								doc:name="Until Successful"
+								doc:id="c5dafe7e-441b-4bb4-bf2b-dad5e9a330f9">
+								<salesforce:create doc:name="Create"
+									doc:id="a8391500-7827-4e56-b4f7-8f2fdabc2139"
+									config-ref="Salesforce_Config" type="SBQQ__QuoteLine__c" />
+								<validation:is-false doc:name="Is false"
+									doc:id="de8f420b-1d1e-456e-b5ac-b23081d6f759"
+									expression="#[payload.successful == false]"
+									message='#["Failed while entering record in quote line"]' />
+							</until-successful>
+							<ee:transform doc:name="RecordUpdation"
+								doc:id="31de4edf-339b-4c8b-9112-75fc879fa5b2">
+								<ee:message>
+								</ee:message>
+								<ee:variables>
+									<ee:set-variable variableName="decorRecords"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"success": vars.decorRecords.success ++ [],
+	"failure": vars.decorRecords.failure ++ [vars.productName]
+}]]></ee:set-variable>
+								</ee:variables>
+							</ee:transform>
+						</otherwise>
+					</choice>
+				</foreach>
+			</route>
+		</scatter-gather>
+	</flow>
+</mule>

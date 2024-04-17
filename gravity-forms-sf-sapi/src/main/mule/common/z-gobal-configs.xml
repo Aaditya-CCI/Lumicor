@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:salesforce-composite="http://www.mulesoft.org/schema/mule/salesforce-composite"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/salesforce-composite http://www.mulesoft.org/schema/mule/salesforce-composite/current/mule-salesforce-composite.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	<http:listener-config name="gravityforms-sfdc-sys-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="gravityforms-sfdc-sys-api-config" api="resource::7d94ceec-ed67-483d-81fa-7869180490d2:gravityforms-sfdc-sys-api:1.0.2:raml:zip:gravityforms-sfdc-sys-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+	<configuration-properties doc:name="Configuration properties" doc:id="e5fdcaa1-bf8a-49ea-8c77-d95306f7af9a" file="properties\config-${mule.env}.yaml" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="6e537451-349c-4f3e-9d4f-a39e6964a667" file="properties\config-secure-${mule.env}.yaml" key="${secure.key}" >
+		<secure-properties:encrypt algorithm="Blowfish" />
+	</secure-properties:config>
+	<salesforce-composite:composite-config name="Salesforce_Composite_Config" doc:name="Salesforce Composite Config" doc:id="241cda60-56e5-45fd-83bf-af35d2508ce2" >
+		<salesforce-composite:oauth-user-pass-connection consumerKey="${secure::salesforceComposite.client_id}" consumerSecret="${secure::salesforceComposite.client_secret}" username="${salesforceComposite.username}" password="${secure::salesforceComposite.password}" securityToken="${secure::salesforceComposite.securityToken}" tokenEndpoint="https://test.salesforce.com/services/oauth2/token" />
+	</salesforce-composite:composite-config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="7d5f0fa3-bbd1-4d6f-835b-3a2d924d399f" >
+		<salesforce:oauth-user-pass-connection consumerKey="${secure::salesforceComposite.client_id}" consumerSecret="${secure::salesforceComposite.client_secret}" username="${salesforceComposite.username}" password="${secure::salesforceComposite.password}" securityToken="${secure::salesforceComposite.securityToken}" tokenEndpoint="https://test.salesforce.com/services/oauth2/token" />
+	</salesforce:sfdc-config>
+	<!--  <api-gateway:autodiscovery apiId="19408279" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="116a88db-abaf-4876-9109-483a55547ed3" flowRef="gravityforms-sfdc-sys-api-main" />-->
+	<configuration-properties doc:name="Configuration properties" doc:id="cf6412b0-d523-44d4-9025-c6766d1aeb0e" file="properties\common-config.yaml" />
+</mule>

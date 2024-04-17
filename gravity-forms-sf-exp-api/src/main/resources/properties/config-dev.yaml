@@ -1,0 +1,9 @@
+sfdc: 
+  sapi:
+    protocol: "HTTPS"
+    host: "gravityforms-sfdc-sys-api-dev-1hpf8h.internal-07nv9h.usa-e2.cloudhub.io"
+    port: ""
+    basepath: "/api"
+    generateQuote:
+      method: "POST"
+      path: "/generate-quote"
