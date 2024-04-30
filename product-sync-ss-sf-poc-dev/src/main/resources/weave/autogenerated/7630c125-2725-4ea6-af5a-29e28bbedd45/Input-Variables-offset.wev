@@ -1,0 +1,5 @@
+%dw 2.0
+
+type auto_7630c125_2725_4ea6_af5a_29e28bbedd45_Input_Variables_offset = {|  |} {"typeAlias": "Serializable",
+"typeId": "java.io.Serializable"}
+

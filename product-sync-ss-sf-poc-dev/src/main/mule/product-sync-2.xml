@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd 
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+	<vm:config name="VM_Config" doc:name="VM Config" doc:id="1c3072b3-2819-4eb7-895c-f7d19e0e098a" >
+		<vm:queues >
+			<vm:queue queueName="demoQueue1" queueType="PERSISTENT" />
+			<vm:queue queueName="queue_sch" queueType="PERSISTENT" />
+		</vm:queues>
+	</vm:config>
+	<os:object-store name="Object_store_pagination" doc:name="Object store" doc:id="7582c3ed-fc9a-42ca-9a05-1a4acfbab737" />
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="8ad86a3f-cd5a-4c17-afc9-6ed54cfea021" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="product-sync-2Flow3" doc:id="08e63b8d-386b-4537-a04b-4ef2b0ccfdff" >
+		<http:listener doc:name="Listener" doc:id="1447c0f9-30dd-451d-a95d-f976ba199d67" config-ref="HTTP_Listener_config" path="productSync"/>
+		<flow-ref doc:name="Flow Reference" doc:id="d9f43cda-e843-469a-98b9-da786f76a886" name="product-sync-2Flow"/>
+	</flow>
+	<flow name="product-sync-2Flow" doc:id="ccf4a115-ec9c-4d09-9bc3-5bac1d4bfdfb" >
+		<scheduler doc:name="Scheduler" doc:id="f9b1afe0-c09c-4422-8ab8-d7743ce9da26">
+			<scheduling-strategy>
+				<fixed-frequency frequency="15" timeUnit="MINUTES" />
+			</scheduling-strategy>
+		</scheduler>
+		<os:retrieve doc:name="Retrieve: DateTimeTempStorage" doc:id="59fa305c-1d56-438b-8685-552fd0107c50" key='#["DateTimeTempStorage"]' objectStore="Object_store" target="retDT">
+			<os:default-value ><![CDATA[#[%dw 2.0
+output application/json
+---
+(now() - |PT1H|) as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}]]]></os:default-value>
+		</os:retrieve>
+		<ee:transform doc:name="payload: retDT, trackingID" doc:id="2e7872f2-e1a1-4d4a-9996-30c520be96f9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"retDT": vars.retDT,
+	"trackingID": uuid(),
+	"runTime": now() as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+			</ee:variables>
+		</ee:transform>
+		<vm:publish queueName="queue_sch" doc:id="727d2523-37b2-41ea-a18c-94354b8355f3" config-ref="VM_Config" doc:name="Publish: queuesch">
+		</vm:publish>
+	</flow>
+	<flow name="product-sync-2Flow1" doc:id="136a1957-b76d-437c-9e97-6d2b271e6c74" >
+		<vm:listener queueName="queue_sch" doc:name="Listener" doc:id="803283e4-2e38-483d-8a39-d1d6f79ba964" config-ref="VM_Config"/>
+		<logger level="INFO" doc:name="Printing trackingID" doc:id="4208c8c8-58c0-47cd-8bcf-262bbc046c88" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"received": payload&#10;}]'/>
+		<ee:transform doc:name="var: d1, d2, retDT, trackingID, runTime, fetch" doc:id="afa0d18b-9bfa-4674-ab2f-9c70d28880ba" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="retDT" ><![CDATA[payload.retDT
+]]></ee:set-variable>
+				<ee:set-variable variableName="trackingID" ><![CDATA[payload.trackingID
+]]></ee:set-variable>
+				<ee:set-variable variableName="runTime" ><![CDATA[payload.runTime
+
+]]></ee:set-variable>
+				<ee:set-variable variableName="fetch" ><![CDATA[1000]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<os:retrieve doc:name="Retrieve Offset Value" doc:id="93d790ad-2636-42ea-b3e9-2619a1330037" key='#["offset"]' objectStore="Object_store_pagination" target="offset">
+			<os:default-value ><![CDATA[0]]></os:default-value>
+		</os:retrieve>
+		<!-- [STUDIO:"Select: From last Runtime"]<db:select doc:name="Select: From last Runtime" doc:id="95e5aa56-ed2a-4a6d-82e3-f6661df7991d" config-ref="Database_Config" >
+			<db:sql ><![CDATA[select * from sampleInfo1 where lastModified > :lemon order by lastModified offset :latestOff rows fetch next :fch rows only&#93;&#93;></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	lemon: payload.retDT,
+	latestOff: vars.offset as Number,
+	fch: vars.fetch as Number
+}&#93;&#93;&#93;></db:input-parameters>
+		</db:select> [STUDIO] -->
+		<!-- [STUDIO:"Query Formation: sample DB"]<ee:transform doc:name="Query Formation: sample DB" doc:id="605f52ac-d441-4362-9934-c07a72e8dea9" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="query" ><![CDATA[%dw 2.0
+output application/json
+var lemon = payload.retDT
+var latestOff = vars.offset as Number
+var fch = vars.fetch as Number
+var date1 = vars.d1
+var date2 = vars.d2
+&#45;&#45;-
+if(date1 != null and date2 != null)
+("select * from sampleInfo1 where lastModified > '" ++ date1 ++"' and  lastModified < '" ++ date2 ++ "' order by lastModified offset " ++ latestOff ++ " rows fetch next " ++ fch ++ " rows only")
+else
+("select * from sampleInfo1 where lastModified > '" ++ lemon ++ "' order by lastModified offset " ++ latestOff ++ " rows fetch next " ++ fch ++ " rows only")&#93;&#93;></ee:set-variable>
+			</ee:variables>
+		</ee:transform> [STUDIO] -->
+		<!-- [STUDIO:"Select: sample DB"]<db:select doc:name="Select: sample DB" doc:id="7104388f-6d23-47a2-8993-3c761b8dffbe" config-ref="Database_Config">
+			<db:sql ><![CDATA[#[vars.query&#93;&#93;&#93;></db:sql>
+		</db:select> [STUDIO] -->
+		<ee:transform doc:name="Query Formation: Lumicor sandbox" doc:id="bdbf3a3a-1034-4651-a0e9-54bcea37e7f0">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="query"><![CDATA[%dw 2.0
+output text/plain
+var lemon = payload.retDT
+var latestOff = vars.offset as Number
+var fch = vars.fetch as Number
+---
+("select item.IMA_Price, Item.IMA_OnHandQty, Item.IMA_ItemName, IMA_LastModifiedDate, Item.IMA_ItemID, IMA_SupercededItemID, ItemAttribute.Attribute1_Value, ItemAttribute.Attribute2_Value, ItemAttribute.Attribute3_Value, ItemAttribute.Attribute4_Value, ItemAttribute.Attribute5_Value, ItemAttribute.Attribute6_Value, ItemAttribute.Attribute7_Value, ItemAttribute.Attribute8_Value FROM Item INNER JOIN ItemAttribute ON Item.IMA_RecordID = ItemAttribute.ItemAttr_IMA_RecordID WHERE Item.IMA_ItemStatusCode = 'ACTIVE' AND IMA_LastModifiedDate > '" ++ lemon ++ "' ORDER BY IMA_LastModifiedDate OFFSET " ++ latestOff ++ " ROWS FETCH NEXT " ++ fch ++" ROWS ONLY")]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<http:request method="GET" doc:name="Request: Lumicor sandbox DB" doc:id="860f1ed5-2d61-4ae5-a716-9a9d21f117d1" config-ref="HTTP_Request_configuration" path="/test" responseTimeout="180000">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+    lastModifiedDate: now(),
+	query : vars.query,
+	database: "iERP90_SANDBOX"
+}]]]></http:headers>
+		</http:request>
+		<choice doc:name="Choice" doc:id="dbd69cac-b17e-47ac-b67b-e8a46e36980f" >
+			<when expression="#[!isEmpty(payload) and sizeOf(payload) == vars.fetch as Number]">
+				<set-variable value="#[1]" doc:name="route" doc:id="6cd627c3-41b7-4e02-be26-c9faf9bcb942" variableName="route" />
+				<logger level="INFO" doc:name="Batch for a page" doc:id="4fca6232-0e24-4205-9fb8-a7d42c477ef1" message='#["Running batch for a page"]'/>
+				<!-- [STUDIO:"payload: salesforce sample db"]<ee:transform doc:name="payload: salesforce sample db" doc:id="0d42bdcb-4c32-4afb-ac11-0fa9d523f329" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+&#45;&#45;-
+payload map {
+	serial_number__c: $.id,
+	student_name__c: $.name,
+	email__c: $.email,
+	roll_number__c: $.rollno,
+	lastModified__c: $.lastModified
+}&#93;&#93;></ee:set-payload>
+					</ee:message>
+				</ee:transform> [STUDIO] -->
+				<ee:transform doc:name="payload: salesforce lumicor db" doc:id="3c0d2c66-1f5d-487f-b185-15efdc319952">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload map {
+    "item_id__c": $.IMA_ItemID,
+    "item_name__c": $.IMA_ItemName,
+    "on_hand_quantity__c": $.IMA_OnHandQty,
+    "item_price__c": $.IMA_Price,
+    "supercededItemId__c": $.IMA_SupercededItemID,
+    "lastModified__c": $.IMA_LastModifiedDate as DateTime,
+    "attribute1__c": $.Attribute1_Value,
+    "atribute2__c": $.Attribute2_Value,
+    "attribute3__c": $.Attribute3_Value
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="Flow Reference" doc:id="eb32faba-dd16-42e1-ac74-bdc2648f26df" name="batch-processing-flow1"/>
+			</when>
+			<when expression="#[!isEmpty(payload) and sizeOf(payload) &lt; vars.fetch as Number]">
+				<set-variable value="#[2]" doc:name="route" doc:id="a3b0f345-6c75-407d-bb9a-06e4ce65c154" variableName="route" />
+				<logger level="INFO" doc:name="Batch for partial page" doc:id="f1b2b514-8e0c-4429-b6b2-8b452036248a" message='#["Running batch for a partial page"]'/>
+				<!-- [STUDIO:"payload: salesforce sample db"]<ee:transform doc:name="payload: salesforce sample db" doc:id="0b7bcfb2-25f2-4217-b2b6-fc5000a3467e" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+&#45;&#45;-
+payload map {
+	serial_number__c: $.id,
+	student_name__c: $.name,
+	email__c: $.email,
+	roll_number__c: $.rollno,
+	lastModified__c: $.lastModified
+}&#93;&#93;></ee:set-payload>
+					</ee:message>
+				</ee:transform> [STUDIO] -->
+				<ee:transform doc:name="payload: salesforce lumicor db" doc:id="fc90aefa-24ea-473e-ac44-c93aef16b462">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload map {
+    "item_id__c": $.IMA_ItemID,
+    "item_name__c": $.IMA_ItemName,
+    "on_hand_quantity__c": $.IMA_OnHandQty,
+    "item_price__c": $.IMA_Price,
+    "supercededItemId__c": $.IMA_SupercededItemID,
+    "lastModified__c": $.IMA_LastModifiedDate as DateTime,
+    "attribute1__c": $.Attribute1_Value,
+    "atribute2__c": $.Attribute2_Value,
+    "attribute3__c": $.Attribute3_Value
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="Flow Reference" doc:id="89d35fab-0a0e-4f21-9a29-a70e8453b6c3" name="batch-processing-flow-2"/>
+			</when>
+			<otherwise >
+				<set-variable value="#[3]" doc:name="route" doc:id="7bfdf5cf-b9f3-453c-b69f-1255d32d4837" variableName="route" />
+				<logger level="INFO" doc:name="No data" doc:id="39b4d866-640e-4270-91b1-18bf94acab24" message='#["There is no data in the database to sync"]'/>
+				<os:clear doc:name="Clear: offset" doc:id="7df88927-a65e-4bf6-bc1d-788c25c22bd2" objectStore="Object_store_pagination"/>
+				<os:retrieve doc:name="Retrieve: offset" doc:id="80d8d797-ad18-4f20-93c2-bbd521579478" key='#["offset"]' objectStore="Object_store_pagination">
+					<os:default-value ><![CDATA[#["The object store has been cleared"]]]></os:default-value>
+				</os:retrieve>
+				<logger level="INFO" doc:name="Logger: offset Value" doc:id="6061e7a0-33e2-4e01-bf1e-8130fcdf4cb3" message='#["Offset retrieved is : " ++ payload as String]'/>
+			</otherwise>
+		</choice>
+		<choice doc:name="Choice" doc:id="c7857504-0859-4f7b-8145-badb456f812a" >
+			<when expression="#[vars.route != 1]">
+				<logger level="INFO" doc:name="not in route 1" doc:id="03204bb6-d215-4728-b4b2-6f2904695c7e" message='#["Went in other than first route"]'/>
+				<os:store doc:name="Store: DateTimeTempStorage" doc:id="7abdf87a-3c82-4ee8-9f35-270bac6be2c3" objectStore="Object_store" key='#["DateTimeTempStorage"]'>
+					<os:value ><![CDATA[#[vars.runTime]]]></os:value>
+				</os:store>
+				<os:retrieve doc:name="Retrieve:  DateTimeTempStorage" doc:id="83b48a42-5f6c-4e3c-a5a0-01018ea03e03" key='#["DateTimeTempStorage"]' objectStore="Object_store">
+					<os:default-value ><![CDATA[#["The value is not saved properly"]]]></os:default-value>
+				</os:retrieve>
+				<logger level="INFO" doc:name="Logger: DateTimeTempStorage value" doc:id="bb140769-da97-4010-864c-6e01c7ad8e07" message="#[payload]"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="went in route 1" doc:id="48d9558a-23eb-4067-9183-8b4e9de40b2d" message='#["Went in route 1"]'/>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="End of flow" doc:id="7f2781e7-bc51-4dbb-abc6-c277a4271cae" message='#["End of the flow"]'/>
+	</flow>
+	<flow name="batch-processing-flow1" doc:id="01074d06-6059-45cf-879e-f4ece44dfbbb" >
+		<batch:job jobName="batch-processing-job-1" doc:id="b384338f-5009-4f08-8353-45e5c3e7e111" maxFailedRecords="-1" blockSize="200">
+			<batch:process-records >
+				<batch:step name="bp-batch-step1" doc:id="f37899a4-e6cc-47c2-ae42-7cb963d37b23" >
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="65a4e84d-f5a1-47ef-ac56-bfed7cdbf168" size="200" preserveMimeTypes="true">
+						<!-- [STUDIO:"sample db"]<salesforce:upsert objectType="sampleInfo__c" doc:name="sample db" doc:id="61312db3-4f69-43a5-99a6-1e46af44dbc9" config-ref="Salesforce_Config" externalIdFieldName="roll_number__c" target="upsertRes"/> [STUDIO] -->
+						<salesforce:upsert doc:name="lumicorDB" doc:id="e7f2fc99-752e-4ff7-8b48-8e93372e8cf4" config-ref="Salesforce_Config" objectType="ProductPlayground__c" externalIdFieldName="item_id__c"/>
+						<logger level="INFO" doc:name="logging upsert result" doc:id="f3a21adb-2896-4de3-aa7b-d01c52e3c243" message="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.upsertRes]"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<os:store doc:name="Storing offset" doc:id="5ac16fb5-674a-4a8c-90e2-09c8025f0f8c" key='#["offset"]' objectStore="Object_store_pagination">
+					<os:value ><![CDATA[#[vars.offset as Number + vars.fetch as Number]]]></os:value>
+				</os:store>
+				<vm:publish doc:name="Publish" doc:id="cf08120d-d9d0-41b7-b985-689e9659fd10" config-ref="VM_Config" queueName="queue_sch">
+					<vm:content ><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	"retDT": vars.retDT,
+	"trackingID": vars.trackingID,
+	"runTime": vars.runTime,
+	"d1": vars.d1,
+	"d2": vars.d2
+}]]]></vm:content>
+				</vm:publish>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+	<flow name="batch-processing-flow-2" doc:id="2a9930ce-6231-478e-b3e4-5d2b9fa24e5d" >
+		<batch:job jobName="batch-processing-job-2" doc:id="bc762edb-90d3-48f6-bc31-4974a92d863c" maxFailedRecords="-1" blockSize="200">
+			<batch:process-records >
+				<batch:step name="bp2-batch-step1" doc:id="7d78a31b-91fa-4715-9c75-4fc0b825a12c" >
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="e874e979-c6f8-445c-94f1-0f91a1c45f44" size="200" preserveMimeTypes="true">
+						<!-- [STUDIO:"sample db"]<salesforce:upsert objectType="sampleInfo__c" externalIdFieldName="roll_number__c" doc:name="sample db" doc:id="0f8ac29c-e42a-4ad4-968a-5fbd04ad2c16" config-ref="Salesforce_Config" target="upsertRes" /> [STUDIO] -->
+						<salesforce:upsert doc:name="LumicorDB" doc:id="32aceabc-8f0b-453f-aaa6-20c7e73869f0" config-ref="Salesforce_Config" objectType="ProductPlayground__c" externalIdFieldName="item_id__c"/>
+						<logger level="INFO" doc:name="logging upsert result" doc:id="d58a4429-8a9e-416f-bb38-a66e402bb1b9" message="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.upsertRes]" />
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<os:clear doc:name="Clear: offset" doc:id="e92f00a2-9c81-431f-9764-889ecfdd8469" objectStore="Object_store_pagination"/>
+				<os:retrieve doc:name="Retrieve offset" doc:id="cb9d7c8f-ad21-4669-835c-73c7a8e3f2ac" key='#["offset"]' objectStore="Object_store_pagination">
+					<os:default-value ><![CDATA[#["The offset object store has been cleared"]]]></os:default-value>
+				</os:retrieve>
+				<logger level="INFO" doc:name="offset value" doc:id="e9a5a29d-875d-405f-8ab8-8bbb182cfb7a" message='#["Offset retrieved is : " ++ payload as String]'/>
+				<logger level="INFO" doc:name="Records synced successfully" doc:id="46c6627f-e1e1-4ab2-a166-4dd8f9f6387e" message='#["All records synced successfully"]'/>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+	<!-- [STUDIO:"product-sync-2"]<flow name="product-sync-2" doc:id="182a5754-8866-4ea4-8316-17a1a9f5677f">
+		<logger level="INFO" doc:name="Start" doc:id="8d3fe1c3-19cf-4d74-9ac4-cc9e6643e24d" message='#["Start of the flow"&#93;' />
+		<set-variable value='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;now() as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}&#93;' doc:name="var: runTime" doc:id="fff9eff6-554c-4358-a900-7079710e897e" variableName="runTime" />
+		<os:retrieve doc:id="b47f412b-3b0b-40f5-bfea-8a1709936773" key='#["DateTimeTempStorage"&#93;' objectStore="Object_store" doc:name="Retrieve: DateTimeTempStorage" target="retDT">
+			<os:default-value><![CDATA[#[%dw 2.0
+output application/json
+&#45;&#45;-
+(now() - |PT1H|) as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}&#93;&#93;&#93;></os:default-value>
+		</os:retrieve>
+		<http:request method="GET" doc:name="Request" doc:id="75cb77b9-342f-4c77-bb47-5259150e853b" config-ref="HTTP_Request_configuration" path="/test" />
+		<db:select doc:name="Select" doc:id="8baca470-15e2-4578-8cee-4fbae84c6ddd" config-ref="Database_Config">
+			<db:sql><![CDATA[select * from sampleInfo1 where lastModified > :lemon&#93;&#93;></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	lemon: vars.retDT
+}&#93;&#93;&#93;></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="72b1426c-1388-4a51-a18c-2da7c36d69d4" message='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;{&#10;	"updatedOrChangedData": payload&#10;}&#93;' />
+		<ee:transform doc:name="Transform Message" doc:id="fafe33f8-6240-4b6e-a147-a07bb6d5065a">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+&#45;&#45;-
+payload map {
+	serial_number__c: $.id,
+	student_name__c: $.name,
+	email__c: $.email,
+	roll_number__c: $.rollno,
+	lastModified__c: $.lastModified
+}&#93;&#93;></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="product-sync-pocBatch_Job" doc:id="35963035-eddb-4829-b8a5-5428b0e87bef" maxFailedRecords="-1"> <batch:process-records> <batch:step name="Batch_Step" doc:id="5c391a57-822a-46f3-b6e2-952ae87dd5f9"> <salesforce:upsert doc:name="Upsert" doc:id="fa24d578-a435-4be6-8eea-f7206dd33550" config-ref="Salesforce_Config" objectType="sampleInfo__c" externalIdFieldName="roll_number__c">
+		</salesforce:upsert>
+					<logger level="INFO" doc:name="Logger" doc:id="739df674-8b41-47f3-a9d6-36e2c5afc4e7" message="#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;payload&#93;" />
+					<validation:is-false doc:name="Is false" doc:id="4c302628-096f-4786-8f1a-b4567383ff02" expression="#[payload.successful == false&#93;" message='#["Failed while 
+			upserting a record"&#93;' /> </batch:step> <batch:step name="Batch_Step1" doc:id="778db9ce-e362-4ecb-a00d-0cd826f3c1e5" acceptPolicy="ONLY_FAILURES"> 
+			<logger level="INFO" doc:name="Logger" doc:id="0fa55a1c-6ab1-4125-b469-1bfec1b7339b" message="#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;payload&#93;" /> 
+			</batch:step> </batch:process-records>
+			<batch:on-complete>
+				<logger level="INFO" doc:name="Logger" doc:id="60f2f19d-fb70-48d9-98e0-e23da2d9d8dc" message='#["The data has been upserted"&#93;' />
+				<os:store doc:name="Store" doc:id="5a1fd105-f36e-4612-bd49-e490e8fc84d4" key='#["DateTimeTempStorage"&#93;' objectStore="Object_store">
+			<os:value><![CDATA[#[vars.runTime&#93;&#93;&#93;></os:value>
+		</os:store>
+				<os:retrieve doc:name="Retrieve" doc:id="c6c80a11-5d28-4e64-ae51-04cd04314e1a" key='#["DateTimeTempStorage"&#93;' objectStore="Object_store">
+			<os:default-value><![CDATA[#["The value is not saved properly"&#93;&#93;&#93;></os:default-value>
+		</os:retrieve>
+				<logger level="INFO" doc:name="Logger" doc:id="d1990d45-de73-41ab-b72f-e9ee5f629421" message='#["Fetched value from object store is " ++ payload as String&#93;' />
+				<logger level="INFO" doc:name="End of flow" doc:id="aebbf074-8768-4ac4-8954-6c05161fce59" message='#["After batch job"&#93;' />
+			</batch:on-complete> 
+</batch:job>
+		<ee:transform doc:name="Transform Message" doc:id="06dc8128-5ee5-4a5b-a2fb-2e2c72148075">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+&#45;&#45;-
+{
+}&#93;&#93;></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	
+</flow> [STUDIO] -->
+
+</mule>

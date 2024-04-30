@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_01074d06_6059_45cf_879e_f4ece44dfbbb_Input_Variables_retDT = Any
+
