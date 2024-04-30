@@ -301,5 +301,7 @@ output application/json
 				</foreach>
 			</route>
 		</scatter-gather>
-	</flow>
+		<error-handler ref="z-common-error-handlerError_Handler" />
+	
+</flow>
 </mule>

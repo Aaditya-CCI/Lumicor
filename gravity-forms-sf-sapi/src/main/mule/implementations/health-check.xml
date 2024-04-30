@@ -12,5 +12,6 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 				<ee:set-variable variableName="httpStatus" ><![CDATA[204]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
+		<error-handler ref="z-common-error-handlerError_Handler" />
 	</flow>
 </mule>

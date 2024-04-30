@@ -59,7 +59,7 @@ var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else fals
 }]]></ee:set-variable>
 					</ee:variables>
 				</ee:transform>
-				<salesforce-composite:execute-composite-request doc:name="get: opportunity, pricebook; post: quote" doc:id="49605d74-5a76-4058-ada1-5cbb43a5d845" config-ref="Salesforce_Composite_Config" >
+				<salesforce-composite:execute-composite-request doc:name="get: opportunity, pricebook; post: quote" doc:id="49605d74-5a76-4058-ada1-5cbb43a5d845" config-ref="Salesforce_Composite_Config" target="compQueryRes">
 					<salesforce-composite:request-body ><![CDATA[#[{
     "compositeRequest": [
     	{

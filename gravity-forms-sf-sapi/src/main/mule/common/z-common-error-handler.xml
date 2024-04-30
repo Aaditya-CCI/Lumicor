@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<error-handler name="z-common-error-handlerError_Handler" doc:id="cc1b2d97-ca0b-48bd-8dbd-b3247be436c4" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="eb6971fe-36dc-4ae2-a778-ed6371a861b1" type="SALESFORCE:CONNECTIVITY">
+			<ee:transform doc:name="Transform Message" doc:id="906c183c-66af-45d5-a059-d5be5d9e97b6" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="7cf5e227-ea80-4a5f-8c68-2dd3b8e42bd0" type="SALESFORCE:TIMEOUT">
+			<ee:transform doc:name="Transform Message" doc:id="b2a6b629-1fc4-4437-b8fb-fff1f10ee186" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="91c44916-985a-418a-8db7-36317df52f7f" type="SALESFORCE-COMPOSITE:CONNECTIVITY">
+			<ee:transform doc:name="Transform Message" doc:id="4e65e3f8-f2f5-4986-8d72-c25672f81438" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="964132a6-7223-465f-90e2-21b2164a3e4d" type="SALESFORCE-COMPOSITE:INVALID_SESSION">
+			<ee:transform doc:name="Transform Message" doc:id="def6ee97-3748-4480-8c6b-545bce4595ff" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+	</error-handler>
+</mule>
