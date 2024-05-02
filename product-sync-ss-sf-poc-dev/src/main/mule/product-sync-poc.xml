@@ -21,6 +21,9 @@ http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/cu
 	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="5e63c0b3-5543-47f6-8ef4-3cc42a624627" >
 		<http:request-connection protocol="HTTPS" host="get-db-products-1hpf8h.07nv9h.usa-e2.cloudhub.io" />
 	</http:request-config>
+	<db:config name="Database_Config_lumicor_db" doc:name="Database Config" doc:id="9d39be88-e005-49f1-93f6-1d9f2c959eb2" >
+		<db:mssql-connection host="10.0.10.45" instanceName="MSSQLSERVER" port="1433" user="MuleSoftIntegration" password="Y4&lt;Uy{M-&quot;2jv=7~Bzk}/W:N65s%QTphf'bga!ec^8$3;JqD*XK" databaseName="iERP90_SANDBOX"/>
+	</db:config>
 	<!-- [STUDIO:"product-sync-pocFlow"]<flow name="product-sync-pocFlow" doc:id="224a3685-6aed-40e1-8f96-45decb3dbaea" >
 		<scheduler doc:name="Scheduler" doc:id="fbd9cd37-c64d-4ec1-bc71-004f67a3d496" >
 			<scheduling-strategy >

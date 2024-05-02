@@ -70,16 +70,16 @@ output application/json
 			<ee:variables >
 				<ee:set-variable variableName="query" ><![CDATA[%dw 2.0
 output application/json
-var lemon = payload.retDT
+//var lemon = payload.retDT
 var latestOff = vars.offset as Number
 var fch = vars.fetch as Number
-var date1 = vars.d1
-var date2 = vars.d2
+var date1 = vars.beginDate
+var date2 = vars.endDate
 &#45;&#45;-
 if(date1 != null and date2 != null)
 ("select * from sampleInfo1 where lastModified > '" ++ date1 ++"' and  lastModified < '" ++ date2 ++ "' order by lastModified offset " ++ latestOff ++ " rows fetch next " ++ fch ++ " rows only")
 else
-("select * from sampleInfo1 where lastModified > '" ++ lemon ++ "' order by lastModified offset " ++ latestOff ++ " rows fetch next " ++ fch ++ " rows only")&#93;&#93;></ee:set-variable>
+("select * from sampleInfo1 where lastModified > '" ++ date1 ++ "' order by lastModified offset " ++ latestOff ++ " rows fetch next " ++ fch ++ " rows only")&#93;&#93;></ee:set-variable>
 			</ee:variables>
 		</ee:transform> [STUDIO] -->
 		<!-- [STUDIO:"Select: sample DB"]<db:select doc:name="Select: sample DB" doc:id="86f6fe18-ada1-4edb-b211-ff96acea5437" config-ref="Database_Config">
@@ -97,22 +97,25 @@ var date1 = vars.beginDate
 var date2 = vars.endDate
 ---
 if(date1 != null and date2 != null)
-("select item.IMA_Price, Item.IMA_OnHandQty, Item.IMA_ItemName, IMA_LastModifiedDate, Item.IMA_ItemID, IMA_SupercededItemID, ItemAttribute.Attribute1_Value, ItemAttribute.Attribute2_Value, ItemAttribute.Attribute3_Value, ItemAttribute.Attribute4_Value, ItemAttribute.Attribute5_Value, ItemAttribute.Attribute6_Value, ItemAttribute.Attribute7_Value, ItemAttribute.Attribute8_Value FROM Item INNER JOIN ItemAttribute ON Item.IMA_RecordID = ItemAttribute.ItemAttr_IMA_RecordID WHERE Item.IMA_ItemStatusCode = 'ACTIVE' AND IMA_LastModifiedDate > '" ++ date1 ++ "' AND IMA_LastModifiedDate < '" ++ date2 ++ "' ORDER BY IMA_LastModifiedDate OFFSET " ++ latestOff ++ " ROWS FETCH NEXT " ++ fch ++ " ROWS ONLY")
+("SELECT item.IMA_ItemID, item.IMA_SupercededItemID, item.IMA_ItemName, item.IMA_Classification, item.IMA_UnitMeasure, item.IMA_Price, item.IMA_PriceMatrixFlag, item.IMA_PriceCodeID, item.IMA_SalesTaxFlag, item.IMA_ItemTypeCode, item.IMA_CustItemID, item.IMA_RevLevel, item.IMA_OnHandQty, item.IMA_ProdFam, item.IMA_ProdModel, item.IMA_LeadTimeCode, item.IMA_PurLeadTime, item.IMA_MfgLeadTime, item.IMA_ItemStatusCode, item.IMA_SalesConvFactor, item.IMA_RoutHrsExcptFlag, item.IMA_GLSalesAcctNbr, item.IMA_CustomerID, item.IMA_OutplantLeadTime, item.IMA_LastModifiedDate, item.IMA_MinSalesQuantity, item.IMA_NonDiscountable, item.IMA_NonCommisionable, item.IMA_Length, item.IMA_LengthUnitMeasure, item.IMA_Width, item.IMA_WidthUnitMeasure, item.IMA_Height, item.IMA_HeightUnitMeasure, item.IMA_WeightUnitMeasure, ItemAttribute.Attribute1_Value, ItemAttribute.Attribute2_Value, ItemAttribute.Attribute3_Value, ItemAttribute.Attribute4_Value, ItemAttribute.Attribute5_Value, ItemAttribute.Attribute6_Value, ItemAttribute.Attribute7_Value, ItemAttribute.Attribute8_Value, ItemAttribute.Attribute9_Value, ItemAttribute.Attribute10_Value, ItemAttribute.Attribute11_Value, ItemAttribute.Attribute12_Value, ItemAttribute.Attribute13_Value, ItemAttribute.Attribute14_Value, ItemAttribute.Attribute15_Value, ItemAttribute.Attribute16_Value, ItemAttribute.Attribute17_Value, ItemAttribute.Attribute18_Value, ItemAttribute.Attribute19_Value, ItemAttribute.Attribute20_Value, ItemAttribute.Attribute21_Value, ItemAttribute.Attribute22_Value, ItemAttribute.Attribute23_Value, ItemAttribute.Attribute24_Value, ItemAttribute.Attribute25_Value, ItemAttribute.Attribute26_Value, ItemAttribute.Attribute27_Value, ItemAttribute.Attribute28_Value, ItemAttribute.Attribute29_Value, ItemAttribute.Attribute30_Value, IMS.IMS_LongDesc FROM Item INNER JOIN ItemAttribute ON Item.IMA_RecordID = ItemAttribute.ItemAttr_IMA_RecordID INNER JOIN IMS ON Item.IMA_RecordID = IMS.IMS_IMA_RecordId WHERE Item.IMA_ItemStatusCode = 'ACTIVE' AND (Item.IMA_ItemTypeCode LIKE 'FGS%' OR Item.IMA_ItemTypeCode = 'Finished Good') AND IMA_LastModifiedDate > '" ++ date1 ++ "' AND IMA_LastModifiedDate < '" ++ date2 ++ "' ORDER BY IMA_LastModifiedDate OFFSET " ++ latestOff ++ " ROWS FETCH NEXT " ++ fch ++ " ROWS ONLY")
 else if(date1 != null)
-("select item.IMA_Price, Item.IMA_OnHandQty, Item.IMA_ItemName, IMA_LastModifiedDate, Item.IMA_ItemID, IMA_SupercededItemID, ItemAttribute.Attribute1_Value, ItemAttribute.Attribute2_Value, ItemAttribute.Attribute3_Value, ItemAttribute.Attribute4_Value, ItemAttribute.Attribute5_Value, ItemAttribute.Attribute6_Value, ItemAttribute.Attribute7_Value, ItemAttribute.Attribute8_Value FROM Item INNER JOIN ItemAttribute ON Item.IMA_RecordID = ItemAttribute.ItemAttr_IMA_RecordID WHERE Item.IMA_ItemStatusCode = 'ACTIVE' AND IMA_LastModifiedDate > '" ++ date1 ++ "' ORDER BY IMA_LastModifiedDate OFFSET " ++ latestOff ++ " ROWS FETCH NEXT " ++ fch ++" ROWS ONLY")
+("SELECT item.IMA_ItemID, item.IMA_SupercededItemID, item.IMA_ItemName, item.IMA_Classification, item.IMA_UnitMeasure, item.IMA_Price, item.IMA_PriceMatrixFlag, item.IMA_PriceCodeID, item.IMA_SalesTaxFlag, item.IMA_ItemTypeCode, item.IMA_CustItemID, item.IMA_RevLevel, item.IMA_OnHandQty, item.IMA_ProdFam, item.IMA_ProdModel, item.IMA_LeadTimeCode, item.IMA_PurLeadTime, item.IMA_MfgLeadTime, item.IMA_ItemStatusCode, item.IMA_SalesConvFactor, item.IMA_RoutHrsExcptFlag, item.IMA_GLSalesAcctNbr, item.IMA_CustomerID, item.IMA_OutplantLeadTime, item.IMA_LastModifiedDate, item.IMA_MinSalesQuantity, item.IMA_NonDiscountable, item.IMA_NonCommisionable, item.IMA_Length, item.IMA_LengthUnitMeasure, item.IMA_Width, item.IMA_WidthUnitMeasure, item.IMA_Height, item.IMA_HeightUnitMeasure, item.IMA_WeightUnitMeasure, ItemAttribute.Attribute1_Value, ItemAttribute.Attribute2_Value, ItemAttribute.Attribute3_Value, ItemAttribute.Attribute4_Value, ItemAttribute.Attribute5_Value, ItemAttribute.Attribute6_Value, ItemAttribute.Attribute7_Value, ItemAttribute.Attribute8_Value, ItemAttribute.Attribute9_Value, ItemAttribute.Attribute10_Value, ItemAttribute.Attribute11_Value, ItemAttribute.Attribute12_Value, ItemAttribute.Attribute13_Value, ItemAttribute.Attribute14_Value, ItemAttribute.Attribute15_Value, ItemAttribute.Attribute16_Value, ItemAttribute.Attribute17_Value, ItemAttribute.Attribute18_Value, ItemAttribute.Attribute19_Value, ItemAttribute.Attribute20_Value, ItemAttribute.Attribute21_Value, ItemAttribute.Attribute22_Value, ItemAttribute.Attribute23_Value, ItemAttribute.Attribute24_Value, ItemAttribute.Attribute25_Value, ItemAttribute.Attribute26_Value, ItemAttribute.Attribute27_Value, ItemAttribute.Attribute28_Value, ItemAttribute.Attribute29_Value, ItemAttribute.Attribute30_Value, IMS.IMS_LongDesc FROM Item INNER JOIN ItemAttribute ON Item.IMA_RecordID = ItemAttribute.ItemAttr_IMA_RecordID INNER JOIN IMS ON Item.IMA_RecordID = IMS.IMS_IMA_RecordId WHERE Item.IMA_ItemStatusCode = 'ACTIVE' AND (Item.IMA_ItemTypeCode LIKE 'FGS%' OR Item.IMA_ItemTypeCode = 'Finished Good') AND IMA_LastModifiedDate > '" ++ date1 ++ "' ORDER BY IMA_LastModifiedDate OFFSET " ++ latestOff ++ " ROWS FETCH NEXT " ++ fch ++" ROWS ONLY")
 else
-("select item.IMA_Price, Item.IMA_OnHandQty, Item.IMA_ItemName, IMA_LastModifiedDate, Item.IMA_ItemID, IMA_SupercededItemID, ItemAttribute.Attribute1_Value, ItemAttribute.Attribute2_Value, ItemAttribute.Attribute3_Value, ItemAttribute.Attribute4_Value, ItemAttribute.Attribute5_Value, ItemAttribute.Attribute6_Value, ItemAttribute.Attribute7_Value, ItemAttribute.Attribute8_Value FROM Item INNER JOIN ItemAttribute ON Item.IMA_RecordID = ItemAttribute.ItemAttr_IMA_RecordID WHERE Item.IMA_ItemStatusCode = 'ACTIVE' AND IMA_LastModifiedDate > '" ++ (now() as DateTime {format: 'yyyy-MM-dd HH:mm:ss.SSS'}) ++ "' ORDER BY IMA_LastModifiedDate OFFSET " ++ latestOff ++ " ROWS FETCH NEXT " ++ fch ++" ROWS ONLY")]]></ee:set-variable>
+("SELECT item.IMA_ItemID, item.IMA_SupercededItemID, item.IMA_ItemName, item.IMA_Classification, item.IMA_UnitMeasure, item.IMA_Price, item.IMA_PriceMatrixFlag, item.IMA_PriceCodeID, item.IMA_SalesTaxFlag, item.IMA_ItemTypeCode, item.IMA_CustItemID, item.IMA_RevLevel, item.IMA_OnHandQty, item.IMA_ProdFam, item.IMA_ProdModel, item.IMA_LeadTimeCode, item.IMA_PurLeadTime, item.IMA_MfgLeadTime, item.IMA_ItemStatusCode, item.IMA_SalesConvFactor, item.IMA_RoutHrsExcptFlag, item.IMA_GLSalesAcctNbr, item.IMA_CustomerID, item.IMA_OutplantLeadTime, item.IMA_LastModifiedDate, item.IMA_MinSalesQuantity, item.IMA_NonDiscountable, item.IMA_NonCommisionable, item.IMA_Length, item.IMA_LengthUnitMeasure, item.IMA_Width, item.IMA_WidthUnitMeasure, item.IMA_Height, item.IMA_HeightUnitMeasure, item.IMA_WeightUnitMeasure, ItemAttribute.Attribute1_Value, ItemAttribute.Attribute2_Value, ItemAttribute.Attribute3_Value, ItemAttribute.Attribute4_Value, ItemAttribute.Attribute5_Value, ItemAttribute.Attribute6_Value, ItemAttribute.Attribute7_Value, ItemAttribute.Attribute8_Value, ItemAttribute.Attribute9_Value, ItemAttribute.Attribute10_Value, ItemAttribute.Attribute11_Value, ItemAttribute.Attribute12_Value, ItemAttribute.Attribute13_Value, ItemAttribute.Attribute14_Value, ItemAttribute.Attribute15_Value, ItemAttribute.Attribute16_Value, ItemAttribute.Attribute17_Value, ItemAttribute.Attribute18_Value, ItemAttribute.Attribute19_Value, ItemAttribute.Attribute20_Value, ItemAttribute.Attribute21_Value, ItemAttribute.Attribute22_Value, ItemAttribute.Attribute23_Value, ItemAttribute.Attribute24_Value, ItemAttribute.Attribute25_Value, ItemAttribute.Attribute26_Value, ItemAttribute.Attribute27_Value, ItemAttribute.Attribute28_Value, ItemAttribute.Attribute29_Value, ItemAttribute.Attribute30_Value, IMS.IMS_LongDesc FROM Item INNER JOIN ItemAttribute ON Item.IMA_RecordID = ItemAttribute.ItemAttr_IMA_RecordID INNER JOIN IMS ON Item.IMA_RecordID = IMS.IMS_IMA_RecordId WHERE Item.IMA_ItemStatusCode = 'ACTIVE' AND (Item.IMA_ItemTypeCode LIKE 'FGS%' OR Item.IMA_ItemTypeCode = 'Finished Good') AND IMA_LastModifiedDate > '" ++ (now() as DateTime {format: 'yyyy-MM-dd HH:mm:ss.SSS'}) ++ "' ORDER BY IMA_LastModifiedDate OFFSET " ++ latestOff ++ " ROWS FETCH NEXT " ++ fch ++" ROWS ONLY")]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<http:request method="GET" doc:name="Request: Lumicor sandbox DB" doc:id="64ca7c9e-b6b0-4e81-bbc8-8457313e4b51" config-ref="HTTP_Request_configuration" path="/test" responseTimeout="180000">
+		<db:select doc:name="Select: Lumicor DB" doc:id="760832c5-79e8-4b5f-9c38-d916df1d97af" config-ref="Database_Config_lumicor_db">
+			<db:sql ><![CDATA[#[vars.query]]]></db:sql>
+		</db:select>
+		<!-- [STUDIO:"Request: Lumicor sandbox DB"]<http:request method="GET" doc:name="Request: Lumicor sandbox DB" doc:id="64ca7c9e-b6b0-4e81-bbc8-8457313e4b51" config-ref="HTTP_Request_configuration" path="/test" responseTimeout="180000">
 			<http:headers ><![CDATA[#[output application/java
----
+&#45;&#45;-
 {
     lastModifiedDate: now(),
 	query : vars.query,
 	database: "iERP90_SANDBOX"
-}]]]></http:headers>
-		</http:request>
+}&#93;&#93;&#93;></http:headers>
+		</http:request> [STUDIO] -->
 		<choice doc:name="Choice" doc:id="34de0ba8-a8a1-4aae-9bdc-eed30ce89d63" >
 			<when expression="#[!isEmpty(payload) and sizeOf(payload) == vars.fetch as Number]">
 				<set-variable value="#[1]" doc:name="route" doc:id="55912aad-cfcb-4f97-98cb-5e858903984d" variableName="route" />
@@ -131,11 +134,11 @@ payload map {
 }&#93;&#93;></ee:set-payload>
 					</ee:message>
 				</ee:transform> [STUDIO] -->
-				<ee:transform doc:name="payload: salesforce lumicor db" doc:id="666c3e57-6e9b-43b5-84e1-b775735168c9">
+				<!-- [STUDIO:"payload: salesforce(productPlayground) lumicor db"]<ee:transform doc:name="payload: salesforce(productPlayground) lumicor db" doc:id="666c3e57-6e9b-43b5-84e1-b775735168c9">
 					<ee:message>
 						<ee:set-payload><![CDATA[%dw 2.0
 output application/java
----
+&#45;&#45;-
 payload map {
     "item_id__c": $.IMA_ItemID,
     "item_name__c": $.IMA_ItemName,
@@ -146,11 +149,90 @@ payload map {
     "attribute1__c": $.Attribute1_Value,
     "atribute2__c": $.Attribute2_Value,
     "attribute3__c": $.Attribute3_Value
+}&#93;&#93;></ee:set-payload>
+					</ee:message>
+				</ee:transform> [STUDIO] -->
+				<ee:transform doc:name="payload: salesforce(product2) lumicor db" doc:id="c47b0404-e9bb-49b1-b1ea-ceae6ba32b6a">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload map {
+    //Item Info
+    "Name": $.IMA_ItemName,
+    "ItemID__c": $.IMA_ItemID,
+    "SupercededItemID__c": $.IMA_SupercededItemID,
+    "ItemName__c": $.IMA_ItemName,
+    "Description": $.IMS_LongDesc,
+    "Classification__c": $.IMA_Classification, 
+    "UnitMeasure__c": $.IMA_UnitMeasure,
+    "Price__c": $.IMA_Price,
+    "PriceMatrixFlag__c": $.IMA_PriceMatrixFlag,
+    "PriceCodeID__c": $.IMA_PriceCodeID,
+    "SalesTaxFlag__c": $.IMA_SalesTaxFlag,
+    "Item_Type_Code__c": $.IMA_ItemTypeCode,
+    "Customer_Product_ID__c": $.IMA_CustItemID,
+    "Rev_Level__c": $.IMA_RevLevel,
+    "OnHandQty__c": $.IMA_OnHandQty,
+    "Family": $.IMA_ProdFam, 
+    "ModelName": $.IMA_ProdModel, 
+    "LeadTimeCode__c": $.IMA_LeadTimeCode,
+    "PurLeadTime__c": $.IMA_PurLeadTime,
+    "MfgLeadTime__c": $.IMA_MfgLeadTime,
+    "ItemStatusCode__c": $.IMA_ItemStatusCode,
+    "SalesConvFactor__c": $.IMA_SalesConvFactor,
+    "RoutHrsExcptFlag__c": $.IMA_RoutHrsExcptFlag,
+    "GLSalesAcctNbr__c": $.IMA_GLSalesAcctNbr,
+    "ERP_Customer_ID__c": $.IMA_CustomerID,
+    "OutplantLeadTime__c": $.IMA_OutplantLeadTime,
+    "LastModifiedDate__c": $.IMA_LastModifiedDate as DateTime,
+    "Min_Sales_Quantity__c": $.IMA_MinSalesQuantity,
+    "SBQQ__NonDiscountable__c": $.IMA_NonDiscountable,
+    "Non_Commissionable__c": $.IMA_NonCommisionable,
+    "Length__c": $.IMA_Length,
+    "Length_Unit_of_Measure__c": $.IMA_LengthUnitMeasure,
+    "Width__c": $.IMA_Width,
+    "Width_Unit_of_Measure__c": $.IMA_WidthUnitMeasure,
+    "Height_Length__c": $.IMA_Height,
+    "Height_Length_Unit_of_Measure__c": $.IMA_HeightUnitMeasure,
+    "Weight_Unit_of_Measure__c": $.IMA_WeightUnitMeasure,
+    //Attributes
+    "Decor__c": $.Attribute1_Value,
+    // "": $.Attribute2_Value,
+    // "": $.Attribute3_Value,
+    "D_cor_1_Direction__c": $.Attribute4_Value,
+    "Resin_Type__c": $.Attribute5_Value,
+    "Gauge__c": $.Attribute6_Value,
+    "Width__c": $.Attribute7_Value,
+    "Height_Length__c": $.Attribute8_Value,
+    "Front_Finish__c": $.Attribute9_Value,
+    "Back_Finish__c": $.Attribute10_Value,
+    "Front_Add_on_1__c": $.Attribute11_Value,
+    "Front_Add_on_2__c": $.Attribute12_Value,
+    "Front_Add_on_3__c": $.Attribute13_Value,
+    "Back_Add_on_1__c": $.Attribute14_Value,
+    "Back_Add_on_2__c": $.Attribute15_Value,
+    "Back_Add_on_3__c": $.Attribute16_Value,
+    // "": $.Attribute17_Value,
+    "Kuvio_Tiles_Finish__c": $.Attribute18_Value,
+    "Solution_Number__c": $.Attribute19_Value,
+    // "": $.Attribute20_Value,
+    // "": $.Attribute21_Value,
+    // "": $.Attribute22_Value,
+    // "": $.Attribute23_Value,
+    // "": $.Attribute24_Value,
+    // "": $.Attribute25_Value,
+    // "": $.Attribute26_Value,
+    // "": $.Attribute27_Value,
+    "Edge_Finish__c": $.Attribute28_Value,
+    "Edge_Profile__c": $.Attribute29_Value,
+    "Price_Basis__c": $.Attribute30_Value
 }]]></ee:set-payload>
 					</ee:message>
 				</ee:transform>
 				<flow-ref doc:name="Flow Reference" doc:id="8a68d1cf-a38d-4a03-81a1-216a4775135f" name="batch-processing-lb-flow1"/>
-			</when>
+			
+</when>
 			<when expression="#[!isEmpty(payload) and sizeOf(payload) &lt; vars.fetch as Number]">
 				<set-variable value="#[2]" doc:name="route" doc:id="da7998cd-67bc-439d-aad7-03e9f69e54a7" variableName="route" />
 				<logger level="INFO" doc:name="Batch for partial page" doc:id="3852eeb1-9abf-495c-9962-45eb0b69b123" message='#["Running batch for a partial page"]'/>
@@ -168,11 +250,11 @@ payload map {
 }&#93;&#93;></ee:set-payload>
 					</ee:message>
 				</ee:transform> [STUDIO] -->
-				<ee:transform doc:name="payload: salesforce lumicor db" doc:id="d7814327-ba92-4335-8ba5-acb372d7426a">
+				<!-- [STUDIO:"payload: salesforce(productPlayground) lumicor db"]<ee:transform doc:name="payload: salesforce(productPlayground) lumicor db" doc:id="d7814327-ba92-4335-8ba5-acb372d7426a">
 					<ee:message>
 						<ee:set-payload><![CDATA[%dw 2.0
 output application/java
----
+&#45;&#45;-
 payload map {
     "item_id__c": $.IMA_ItemID,
     "item_name__c": $.IMA_ItemName,
@@ -183,11 +265,90 @@ payload map {
     "attribute1__c": $.Attribute1_Value,
     "atribute2__c": $.Attribute2_Value,
     "attribute3__c": $.Attribute3_Value
+}&#93;&#93;></ee:set-payload>
+					</ee:message>
+				</ee:transform> [STUDIO] -->
+				<ee:transform doc:name="payload: salesforce(product2) lumicor db" doc:id="6016faa0-5730-4ae6-a349-5e517a2f8425">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+payload map {
+    //Item Info
+    "Name": $.IMA_ItemName,
+    "ItemID__c": $.IMA_ItemID,
+    "SupercededItemID__c": $.IMA_SupercededItemID,
+    "ItemName__c": $.IMA_ItemName,
+    "Description": $.IMS_LongDesc,
+    "Classification__c": $.IMA_Classification, 
+    "UnitMeasure__c": $.IMA_UnitMeasure,
+    "Price__c": $.IMA_Price,
+    "PriceMatrixFlag__c": $.IMA_PriceMatrixFlag,
+    "PriceCodeID__c": $.IMA_PriceCodeID,
+    "SalesTaxFlag__c": $.IMA_SalesTaxFlag,
+    "Item_Type_Code__c": $.IMA_ItemTypeCode,
+    "Customer_Product_ID__c": $.IMA_CustItemID,
+    "Rev_Level__c": $.IMA_RevLevel,
+    "OnHandQty__c": $.IMA_OnHandQty,
+    "Family": $.IMA_ProdFam, 
+    "ModelName": $.IMA_ProdModel, 
+    "LeadTimeCode__c": $.IMA_LeadTimeCode,
+    "PurLeadTime__c": $.IMA_PurLeadTime,
+    "MfgLeadTime__c": $.IMA_MfgLeadTime,
+    "ItemStatusCode__c": $.IMA_ItemStatusCode,
+    "SalesConvFactor__c": $.IMA_SalesConvFactor,
+    "RoutHrsExcptFlag__c": $.IMA_RoutHrsExcptFlag,
+    "GLSalesAcctNbr__c": $.IMA_GLSalesAcctNbr,
+    "ERP_Customer_ID__c": $.IMA_CustomerID,
+    "OutplantLeadTime__c": $.IMA_OutplantLeadTime,
+    "LastModifiedDate__c": $.IMA_LastModifiedDate as DateTime,
+    "Min_Sales_Quantity__c": $.IMA_MinSalesQuantity,
+    "SBQQ__NonDiscountable__c": $.IMA_NonDiscountable,
+    "Non_Commissionable__c": $.IMA_NonCommisionable,
+    "Length__c": $.IMA_Length,
+    "Length_Unit_of_Measure__c": $.IMA_LengthUnitMeasure,
+    "Width__c": $.IMA_Width,
+    "Width_Unit_of_Measure__c": $.IMA_WidthUnitMeasure,
+    "Height_Length__c": $.IMA_Height,
+    "Height_Length_Unit_of_Measure__c": $.IMA_HeightUnitMeasure,
+    "Weight_Unit_of_Measure__c": $.IMA_WeightUnitMeasure,
+    //Attributes
+    "Decor__c": $.Attribute1_Value,
+    // "": $.Attribute2_Value,
+    // "": $.Attribute3_Value,
+    "D_cor_1_Direction__c": $.Attribute4_Value,
+    "Resin_Type__c": $.Attribute5_Value,
+    "Gauge__c": $.Attribute6_Value,
+    "Width__c": $.Attribute7_Value,
+    "Height_Length__c": $.Attribute8_Value,
+    "Front_Finish__c": $.Attribute9_Value,
+    "Back_Finish__c": $.Attribute10_Value,
+    "Front_Add_on_1__c": $.Attribute11_Value,
+    "Front_Add_on_2__c": $.Attribute12_Value,
+    "Front_Add_on_3__c": $.Attribute13_Value,
+    "Back_Add_on_1__c": $.Attribute14_Value,
+    "Back_Add_on_2__c": $.Attribute15_Value,
+    "Back_Add_on_3__c": $.Attribute16_Value,
+    // "": $.Attribute17_Value,
+    "Kuvio_Tiles_Finish__c": $.Attribute18_Value,
+    "Solution_Number__c": $.Attribute19_Value,
+    // "": $.Attribute20_Value,
+    // "": $.Attribute21_Value,
+    // "": $.Attribute22_Value,
+    // "": $.Attribute23_Value,
+    // "": $.Attribute24_Value,
+    // "": $.Attribute25_Value,
+    // "": $.Attribute26_Value,
+    // "": $.Attribute27_Value,
+    "Edge_Finish__c": $.Attribute28_Value,
+    "Edge_Profile__c": $.Attribute29_Value,
+    "Price_Basis__c": $.Attribute30_Value
 }]]></ee:set-payload>
 					</ee:message>
 				</ee:transform>
 				<flow-ref doc:name="Flow Reference" doc:id="63282f3c-7d27-4bc7-9b31-e48ff6676d5a" name="batch-processing-flow-lb-2"/>
-			</when>
+			
+</when>
 			<otherwise >
 				<set-variable value="#[3]" doc:name="route" doc:id="9a427c67-4885-40f8-ae3a-14abe6169ff2" variableName="route" />
 				<logger level="INFO" doc:name="No data" doc:id="a8f26551-8b56-4925-b50a-ef32b8a7c58c" message='#["There is no data in the database to sync"]'/>
@@ -207,11 +368,17 @@ payload map {
 				<batch:step name="bp-lb-batch-step1" doc:id="dc447a26-80da-4be2-820f-f2cd7c0790e9" >
 					<batch:aggregator doc:name="Batch Aggregator" doc:id="591453e2-550d-463c-beae-e086f2f92b72" size="200" preserveMimeTypes="true">
 						<!-- [STUDIO:"sample db"]<salesforce:upsert objectType="sampleInfo__c" doc:name="sample db" doc:id="1c78708f-45b5-403f-ad0d-599795fd6bd8" config-ref="Salesforce_Config" externalIdFieldName="roll_number__c" target="upsertRes"/> [STUDIO] -->
-						<salesforce:upsert doc:name="lumicorDB" doc:id="2368aeea-3f18-4996-a619-725356b93624" config-ref="Salesforce_Config" objectType="ProductPlayground__c" externalIdFieldName="item_id__c"/>
+						<!-- [STUDIO:"lumicorDB"]<salesforce:upsert doc:name="lumicorDB" doc:id="2368aeea-3f18-4996-a619-725356b93624" config-ref="Salesforce_Config" objectType="ProductPlayground__c" externalIdFieldName="item_id__c"/> [STUDIO] -->
+						<salesforce:upsert objectType="Product2" externalIdFieldName="ItemID__c" doc:name="lumicorDB to Product2" doc:id="5d84b7cf-66fa-456c-9485-e4cbee6f1ab9" config-ref="Salesforce_Config" />
 						<logger level="INFO" doc:name="logging upsert result" doc:id="a7f74ef9-2116-4f7d-910c-1f62a1b7898e" message="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.upsertRes]"/>
-					</batch:aggregator>
+					
+</batch:aggregator>
 				</batch:step>
-			</batch:process-records>
+				<batch:step name="Batch_Step_lb1" doc:id="a25c2c21-b59d-40ff-b6cd-fc8ce2e18b1c" acceptPolicy="ONLY_FAILURES">
+					<logger level="INFO" doc:name="Logger: payload" doc:id="1d33621e-6440-4533-a48e-fe7ba47862f0" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": payload&#10;}]'/>
+				</batch:step>
+			
+</batch:process-records>
 			<batch:on-complete >
 				<os:store doc:name="Storing offset" doc:id="9668ef1a-414f-43a7-8858-e835a19508e1" key='#["offset"]' objectStore="Object_store_pagination_lb">
 					<os:value ><![CDATA[#[vars.offset as Number + vars.fetch as Number]]]></os:value>
@@ -235,11 +402,17 @@ output application/json
 				<batch:step name="bp2-lb-batch-step1" doc:id="ba55fd28-b6bd-49f0-ae68-bd2f098eccfe" >
 					<batch:aggregator doc:name="Batch Aggregator" doc:id="2a84dacc-08e0-4011-8a78-a40c49cfdf1d" size="200" preserveMimeTypes="true">
 						<!-- [STUDIO:"sample db"]<salesforce:upsert objectType="sampleInfo__c" externalIdFieldName="roll_number__c" doc:name="sample db" doc:id="eebfc564-ff24-4c89-bada-376aa138f1c2" config-ref="Salesforce_Config" target="upsertRes" /> [STUDIO] -->
-						<salesforce:upsert doc:name="LumicorDB" doc:id="3e0e462f-d955-43df-a344-451199686cac" config-ref="Salesforce_Config" objectType="ProductPlayground__c" externalIdFieldName="item_id__c"/>
+						<!-- [STUDIO:"LumicorDB"]<salesforce:upsert doc:name="LumicorDB" doc:id="3e0e462f-d955-43df-a344-451199686cac" config-ref="Salesforce_Config" objectType="ProductPlayground__c" externalIdFieldName="item_id__c"/> [STUDIO] -->
+						<salesforce:upsert objectType="Product2" externalIdFieldName="ItemID__c" doc:name="lumicorDB to Product" doc:id="0421a786-0bd2-4577-bd38-67af1c2e9d8e" config-ref="Salesforce_Config" />
 						<logger level="INFO" doc:name="logging upsert result" doc:id="01acfa08-8748-4a77-8bbc-cf35ff1e91f1" message="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.upsertRes]" />
-					</batch:aggregator>
+					
+</batch:aggregator>
 				</batch:step>
-			</batch:process-records>
+				<batch:step name="Batch_Step_lb2" doc:id="fb08c946-a656-4ea6-9a18-e511f6871167" acceptPolicy="ONLY_FAILURES" >
+					<logger level="INFO" doc:name="Logger: payload" doc:id="15b62e6d-584c-4c0e-9aca-e155fe6b8a31" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": payload&#10;}]' />
+				</batch:step>
+			
+</batch:process-records>
 			<batch:on-complete >
 				<os:clear doc:name="Clear: offset" doc:id="3b1528bd-9766-4f70-8be5-3e0c852d3262" objectStore="Object_store_pagination_lb"/>
 				<os:retrieve doc:name="Retrieve offset" doc:id="952a5b44-6416-42c4-8b97-c49e2f9b68cd" key='#["offset"]' objectStore="Object_store_pagination_lb">
