@@ -1,0 +1,29 @@
+%dw 2.0
+
+type auto_2a9930ce_6231_478e_b3e4_5d2b9fa24e5d_Input_Payload = Array<{|  serial_number__c: java_lang_Object | Null,   student_name__c: java_lang_Object_4 | Null,   email__c: java_lang_Object_7 | Null,   roll_number__c: java_lang_Object_10 | Null,   lastModified__c: java_lang_Object_13 | Null|}>
+type java_lang_Object_4 = {|  |} {"typeAlias": "Object",
+"class": "java.lang.Object",
+"typeId": "java.lang.Object"}
+
+
+type java_lang_Object_7 = {|  |} {"typeAlias": "Object",
+"class": "java.lang.Object",
+"typeId": "java.lang.Object"}
+
+
+type java_lang_Object_13 = {|  |} {"typeAlias": "Object",
+"class": "java.lang.Object",
+"typeId": "java.lang.Object"}
+
+
+type java_lang_Object = {|  |} {"typeAlias": "Object",
+"class": "java.lang.Object",
+"typeId": "java.lang.Object"}
+
+
+type java_lang_Object_10 = {|  |} {"typeAlias": "Object",
+"class": "java.lang.Object",
+"typeId": "java.lang.Object"}
+
+
+

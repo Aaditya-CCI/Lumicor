@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="1a55ffd7-953e-4297-9708-0c81de902f4b" >
+		<db:mssql-connection host="localhost" instanceName="DESKTOP-2LUA2GM" port="1433" user="sa" password="root" databaseName="sampleDB" />
+	</db:config>
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="d88b1647-03c4-4453-8181-5f4f644118dd" />
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="b7d4a5b0-b765-472e-befb-dee31a751ce7" >
+		<salesforce:oauth-user-pass-connection tokenEndpoint="https://test.salesforce.com/services/oauth2/token" consumerKey="3MVG9EJ2FoGDnkgVlM4AGOpK3BEs4AIfwk.hI3xOiSsSCrbIOmDCXjPcJyVDbR2EHKbhPuX0FgV747ZxiFeHc" consumerSecret="49A1002C901D27EEF5AAE2D07B46DBEC73FE24BD34B5748EEF2E1241E39BCD22" username="aaditya.duggal@lumicor.dev1" password="Aaditya@742" securityToken="uUy7wPIi14kQAP5y9R8nAJ0MZ"/>
+	</salesforce:sfdc-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="5e63c0b3-5543-47f6-8ef4-3cc42a624627" >
+		<http:request-connection protocol="HTTPS" host="get-db-products-1hpf8h.07nv9h.usa-e2.cloudhub.io" />
+	</http:request-config>
+	<db:config name="Database_Config_lumicor_db" doc:name="Database Config" doc:id="9d39be88-e005-49f1-93f6-1d9f2c959eb2" >
+		<db:mssql-connection host="10.0.10.45" instanceName="MSSQLSERVER" port="1433" user="MuleSoftIntegration" password="Y4&lt;Uy{M-&quot;2jv=7~Bzk}/W:N65s%QTphf'bga!ec^8$3;JqD*XK" databaseName="iERP90_SANDBOX"/>
+	</db:config>
+	<!-- [STUDIO:"product-sync-pocFlow"]<flow name="product-sync-pocFlow" doc:id="224a3685-6aed-40e1-8f96-45decb3dbaea" >
+		<scheduler doc:name="Scheduler" doc:id="fbd9cd37-c64d-4ec1-bc71-004f67a3d496" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="15" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<logger level="INFO" doc:name="Start" doc:id="d6017408-282c-452d-b653-7e954dc47eda" message='#["Start of the flow"&#93;'/>
+		<set-variable value='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;now() as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}&#93;' doc:name="var: runTime" doc:id="4d7cf179-4c8f-43ba-806e-462ac02d4aca" variableName="runTime"/>
+		<os:retrieve doc:id="ffb23105-476c-4c62-b51d-4c2a15569300" key='#["DateTimeTempStorage"&#93;' objectStore="Object_store" doc:name="Retrieve: DateTimeTempStorage" target="retDT">
+			<os:default-value ><![CDATA[#[%dw 2.0
+output application/json
+&#45;&#45;-
+(now() - |PT1H|) as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}&#93;&#93;&#93;></os:default-value>
+		</os:retrieve>
+		<http:request method="GET" doc:name="Request" doc:id="f0339f6d-b528-48a5-a011-6af4c4d47f06" config-ref="HTTP_Request_configuration" path="/test"/>
+		<db:select doc:name="Select" doc:id="e9f14b74-f950-4a30-99e8-225f6e9906ec" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from sampleInfo1 where lastModified > :lemon&#93;&#93;></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	lemon: vars.retDT
+}&#93;&#93;&#93;></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="c5101ab2-ee2a-40d4-b927-f0307a57c79c" message='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;{&#10;	"updatedOrChangedData": payload&#10;}&#93;'/>
+		<ee:transform doc:name="Transform Message" doc:id="6e64adff-7303-41a0-9093-b33b0dfd127c">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+&#45;&#45;-
+payload map {
+	serial_number__c: $.id,
+	student_name__c: $.name,
+	email__c: $.email,
+	roll_number__c: $.rollno,
+	lastModified__c: $.lastModified
+}&#93;&#93;></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:upsert doc:name="Upsert" doc:id="070d144c-8c92-4d07-886f-83efdb2dc01c" config-ref="Salesforce_Config" objectType="sampleInfo__c" externalIdFieldName="roll_number__c">
+			</salesforce:upsert>
+		<logger level="INFO" doc:name="Logger" doc:id="719f4103-4098-439c-81e3-c6662e649110" message="#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;payload&#93;"/>
+		<batch:job jobName="product-sync-pocBatch_Job" doc:id="3726db9b-de6c-4fbf-8b0a-8844939bf6c8" maxFailedRecords="-1">
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="152e81e1-d9e2-474e-81d1-66084ab28c79" >
+					<validation:is-false doc:name="Is false" doc:id="a0b9381e-c76f-4e9f-a992-eb5ef12cce98" expression="#[payload.successful == false&#93;" message='#["Failed while upserting a record"&#93;'/>
+				</batch:step>
+				<batch:step name="Batch_Step1" doc:id="a4ea361d-b872-4325-b298-5ac0d844fbac" acceptPolicy="ONLY_FAILURES">
+					<logger level="INFO" doc:name="Logger" doc:id="918ff355-9284-4cad-bec8-399ea0dd1d57" message="#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;payload&#93;"/>
+				</batch:step>
+			</batch:process-records>
+		</batch:job>
+		<logger level="INFO" doc:name="Logger" doc:id="3db5cbbc-52a2-4f9e-8e34-9eafe01dba8f" message='#["The data has been upserted"&#93;' />
+		<os:store doc:name="Store" doc:id="6c1f9a84-1c5d-47bc-a52c-02d6c54f32d5" key='#["DateTimeTempStorage"&#93;' objectStore="Object_store">
+			<os:value><![CDATA[#[vars.runTime&#93;&#93;&#93;></os:value>
+		</os:store>
+		<os:retrieve doc:name="Retrieve" doc:id="fc79af32-b1bc-42e6-b9d9-50f0449150b1" key='#["DateTimeTempStorage"&#93;' objectStore="Object_store">
+			<os:default-value><![CDATA[#["The value ot saved properly"&#93;&#93;&#93;></os:default-value>
+		</os:retrieve>
+		<logger level="INFO" doc:name="Logger" doc:id="195ff4c6-51f1-4c52-b772-9b8e91540415" message='#["Fetched value from object store is " ++ payload as String&#93;' />
+		<logger level="INFO" doc:name="End of flow" doc:id="cc56985c-b0fc-4ea7-836f-fd997ae1278a" message='#["After batch job"&#93;' />
+		<foreach doc:name="For Each" doc:id="5224cffc-a23e-4b5b-aeaf-122af1a91a41" collection="#[payload&#93;">
+		</foreach>
+	</flow> [STUDIO] -->
+	<!-- [STUDIO:"product-sync-pocFlow1"]<flow name="product-sync-pocFlow1" doc:id="a9abd2d9-4cae-4aaf-b41a-b29d3597e715" maxConcurrency="1">
+		<scheduler doc:name="Scheduler" doc:id="65f8a1e9-a28a-488a-a92c-627764d65ccf" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="15" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<set-payload value='#[["Aaditya", "Duggal", 1,2,3,4, "neel", 5&#93;&#93;' doc:name="Set Payload" doc:id="c1521ec3-f468-481b-9330-83921231e119" />
+		
+		<batch:job jobName="product-sync-pocBatch_Job1" doc:id="44954c3c-7a73-4975-98fc-f9f2ad7f5195" maxFailedRecords="-1">
+			<batch:process-records>
+				<batch:step name="Batch_Step2" doc:id="5e53ff7a-cf1e-4748-aed5-ef94d12283f6">
+					<validation:is-number doc:name="Is number" doc:id="483c4e4a-7b4b-4866-b56d-ee0e06eb6f93" value="#[payload&#93;" numberType="INTEGER" message='#["The received payload is not a number"&#93;' />
+					<logger level="INFO" doc:name="Logger" doc:id="ac8941af-02a6-48c6-8ba2-83798677726e" message="#[payload&#93;" />
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="8e7e5b1a-6e67-435b-a0e2-1f7682ac9fdd" size="20" preserveMimeTypes="true">
+						<logger level="INFO" doc:name="Logger" doc:id="761a8a3e-4be8-457e-9278-0fa4f8254d94" message="#[payload[3&#93;&#93;"/>
+					</batch:aggregator>
+				
+</batch:step>
+				<batch:step name="Batch_Step3" doc:id="80ff8d67-187d-4d24-8f70-c5ec0f0282b3" acceptPolicy="ONLY_FAILURES">
+					<logger level="INFO" doc:name="Logger" doc:id="c1556ec7-6e4a-493d-ba8b-6699af14d3a6" message='#["This is not a number! = " ++ payload&#93;' />
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete>
+				<flow-ref doc:name="Flow Reference" doc:id="3a100da9-3910-424d-80e5-06693cda882a" name="product-sync-pocSub_Flow" />
+			</batch:on-complete>
+		</batch:job>
+	</flow> [STUDIO] -->
+	<!-- [STUDIO:"product-sync-pocSub_Flow"]<sub-flow name="product-sync-pocSub_Flow" doc:id="6de8775e-26e1-4c53-b654-c8788c8a213b" >
+		<logger level="INFO" doc:name="Logger" doc:id="51dc35c7-34e8-4371-b3e0-9b2f577ad698" message='#["This is logger 1"&#93;'/>
+		<logger level="INFO" doc:name="Logger" doc:id="655baa18-4a6d-4297-a9e2-286720d552d4" message='#["This is logger 2"&#93;'/>
+	</sub-flow> [STUDIO] -->
+	<!-- [STUDIO:"product-sync-pocFlow2"]<flow name="product-sync-pocFlow2" doc:id="e90c29cc-c52d-4b11-998a-d3893e0559c4" >
+		<scheduler doc:name="Scheduler" doc:id="9bc7cdb0-21a0-4674-8805-d714eb302f25" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="15" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<vm:publish doc:name="Publish" doc:id="1ffefe65-5819-47f2-a1f8-d97362a09a29" config-ref="VM_Config" queueName="demoQueue1">
+			<vm:content ><![CDATA[#[%dw 2.0
+output application/json
+&#45;&#45;-
+{
+	"value": 78
+}&#93;&#93;&#93;></vm:content>
+		</vm:publish>
+	</flow> [STUDIO] -->
+	<!-- [STUDIO:"product-sync-pocFlow3"]<flow name="product-sync-pocFlow3" doc:id="67139aed-74f4-47d9-b4dc-9ae18eab7564" >
+		<vm:listener queueName="demoQueue1" doc:name="Listener" doc:id="b0c99e60-015e-43de-95f1-c1455386a49c" config-ref="VM_Config"/>
+		<choice doc:name="Choice" doc:id="6d9f8304-0b57-493f-bafb-1b98d1d307a0" >
+			<when expression="#[payload.value == 78&#93;">
+				<vm:publish doc:name="Publish" doc:id="3d5cfeed-1133-4e54-9b23-1ad5bd03e325" config-ref="VM_Config" queueName="demoQueue1">
+					<vm:content ><![CDATA[#[%dw 2.0
+output application/json
+&#45;&#45;-
+{
+	"value": 78
+}&#93;&#93;&#93;></vm:content>
+				</vm:publish>
+				<set-variable value="#[1&#93;" doc:name="Set Variable" doc:id="219824d7-48a0-4098-8401-a1b3d42cbf89" variableName="route"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="4dd39030-15ea-4873-b7c5-acfef287a963" message='#["In default"&#93;'/>
+			</otherwise>
+		</choice>
+		<choice doc:name="Choice" doc:id="53d800dc-9a9f-4f60-b0ec-a4c4ecc87a77" >
+			<when expression="#[vars.route == 1&#93;">
+				<logger level="INFO" doc:name="Logger" doc:id="bc0b3eb3-f288-4d75-8308-dc38581e0ef8" message='#["It is still in loop"&#93;'/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="4ee74bd4-d50c-46b3-befc-7fc841984c5d" message='#["End of the flow"&#93;' />
+			</otherwise>
+		</choice>
+	</flow> [STUDIO] -->
+</mule>
