@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<flow name="product-sync-scheduler-basedFlow"
+		doc:id="1ce99bb0-946e-4242-9458-137325aa7cdd">
+		<scheduler doc:name="Scheduler"
+			doc:id="1d0bb402-eb94-4534-86b4-fca37f07df1d">
+			<scheduling-strategy>
+				<fixed-frequency frequency="5" timeUnit="MINUTES" />
+			</scheduling-strategy>
+		</scheduler>
+		<os:retrieve doc:name="Retrieve: DateTimeTempStorage"
+			doc:id="53b840a6-e7bb-4e02-9b3c-2ceb96e2c20e"
+			key='#["DateTimeTempStorage"]' objectStore="Object_store"
+			target="retDT">
+			<os:default-value><![CDATA[#[%dw 2.0
+output application/json
+---
+(now() - |PT1H|) as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}]]]></os:default-value>
+		</os:retrieve>
+		<ee:transform doc:name="payload: retDT, trackingID"
+			doc:id="1ff1d477-0e6a-446f-a746-acb31f39216f">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"retDT": vars.retDT,
+	"trackingID": uuid(),
+	"runTime": now() as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables>
+			</ee:variables>
+		</ee:transform>
+		<vm:publish queueName="queue_sch"
+			doc:id="e860aad2-7bd1-4709-9ee8-55d6e7d98fbe" config-ref="VM_Config"
+			doc:name="Publish: queuesch">
+		</vm:publish>
+	</flow>
+	<flow name="product-sync-2Flow1"
+		doc:id="aa70f00e-51c5-4b01-825a-7530579aef37">
+		<vm:listener queueName="queue_sch" doc:name="Listener"
+			doc:id="ad7b3813-ee6f-4b9a-a036-c66df427a1dc" config-ref="VM_Config" />
+		<logger level="INFO" doc:name="Printing trackingID"
+			doc:id="85048c4f-0121-445e-a1f1-cfd235949d0c"
+			message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"received": payload&#10;}]' />
+		<ee:transform
+			doc:name="var: d1, d2, retDT, trackingID, runTime, fetch"
+			doc:id="8ac225b4-2f91-4bdd-b98f-a85fa3ed973f">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="retDT"><![CDATA[payload.retDT
+]]></ee:set-variable>
+				<ee:set-variable variableName="trackingID"><![CDATA[payload.trackingID
+]]></ee:set-variable>
+				<ee:set-variable variableName="runTime"><![CDATA[payload.runTime
+
+]]></ee:set-variable>
+				<ee:set-variable variableName="fetch"><![CDATA[1000]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<os:retrieve doc:name="Retrieve Offset Value"
+			doc:id="0e105942-1a29-4dac-8745-b3d76ce9a6c5" key='#["offset"]'
+			objectStore="Object_store_pagination" target="offset">
+			<os:default-value><![CDATA[0]]></os:default-value>
+		</os:retrieve>
+		<ee:transform doc:name="Query Formation: Lumicor sandbox"
+			doc:id="388b65f0-955e-4c96-a34c-c5f46a98dd06">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="query"><![CDATA[%dw 2.0
+output text/plain
+var lemon = payload.retDT
+var latestOff = vars.offset as Number
+var fch = vars.fetch as Number
+---
+("SELECT item.IMA_ItemID, item.IMA_SupercededItemID, item.IMA_ItemName, item.IMA_Classification, item.IMA_UnitMeasure, item.IMA_Price, item.IMA_PriceMatrixFlag, item.IMA_PriceCodeID, item.IMA_SalesTaxFlag, item.IMA_ItemTypeCode, item.IMA_CustItemID, item.IMA_RevLevel, item.IMA_OnHandQty, item.IMA_ProdFam, item.IMA_ProdModel, item.IMA_LeadTimeCode, item.IMA_PurLeadTime, item.IMA_MfgLeadTime, item.IMA_ItemStatusCode, item.IMA_SalesConvFactor, item.IMA_RoutHrsExcptFlag, item.IMA_GLSalesAcctNbr, item.IMA_CustomerID, item.IMA_OutplantLeadTime, item.IMA_LastModifiedDate, item.IMA_MinSalesQuantity, item.IMA_NonDiscountable, item.IMA_NonCommisionable, item.IMA_Length, item.IMA_LengthUnitMeasure, item.IMA_Width, item.IMA_WidthUnitMeasure, item.IMA_Height, item.IMA_HeightUnitMeasure, item.IMA_WeightUnitMeasure, ItemAttribute.Attribute1_Value, ItemAttribute.Attribute2_Value, ItemAttribute.Attribute3_Value, ItemAttribute.Attribute4_Value, ItemAttribute.Attribute5_Value, ItemAttribute.Attribute6_Value, ItemAttribute.Attribute7_Value, ItemAttribute.Attribute8_Value, ItemAttribute.Attribute9_Value, ItemAttribute.Attribute10_Value, ItemAttribute.Attribute11_Value, ItemAttribute.Attribute12_Value, ItemAttribute.Attribute13_Value, ItemAttribute.Attribute14_Value, ItemAttribute.Attribute15_Value, ItemAttribute.Attribute16_Value, ItemAttribute.Attribute17_Value, ItemAttribute.Attribute18_Value, ItemAttribute.Attribute19_Value, ItemAttribute.Attribute20_Value, ItemAttribute.Attribute21_Value, ItemAttribute.Attribute22_Value, ItemAttribute.Attribute23_Value, ItemAttribute.Attribute24_Value, ItemAttribute.Attribute25_Value, ItemAttribute.Attribute26_Value, ItemAttribute.Attribute27_Value, ItemAttribute.Attribute28_Value, ItemAttribute.Attribute29_Value, ItemAttribute.Attribute30_Value, IMS.IMS_LongDesc FROM Item INNER JOIN ItemAttribute ON Item.IMA_RecordID = ItemAttribute.ItemAttr_IMA_RecordID INNER JOIN IMS ON Item.IMA_RecordID = IMS.IMS_IMA_RecordId WHERE Item.IMA_ItemStatusCode = 'ACTIVE' AND (Item.IMA_ItemTypeCode LIKE 'FGS%' OR Item.IMA_ItemTypeCode = 'Finished Good') AND IMA_LastModifiedDate > '" ++ lemon ++ "' ORDER BY IMA_LastModifiedDate OFFSET " ++ latestOff ++ " ROWS FETCH NEXT " ++ fch ++" ROWS ONLY")]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<!-- [STUDIO:"Select: Lumicor DB"]<db:select doc:name="Select: Lumicor 
+			DB" doc:id="26f33b37-dc61-4719-b474-fb47a04a2a0a" config-ref="Database_Config_lumicor_db"> 
+			<db:sql><![CDATA[#[vars.query&#93;&#93;&#93;></db:sql> </db:select> [STUDIO] -->
+		<http:request method="GET"
+			doc:name="Request: Lumicor sandbox DB"
+			doc:id="0204fd61-0623-4f3c-9130-48b575667f6b"
+			config-ref="HTTP_Request_configuration" path="/test"
+			responseTimeout="180000">
+			<http:headers><![CDATA[#[output application/java
+---
+{
+    lastModifiedDate: now(),
+	query : vars.query,
+	database: "iERP90_SANDBOX"
+}]]]></http:headers>
+		</http:request>
+		<choice doc:name="Choice"
+			doc:id="e6c16066-ca85-4737-8e4e-9653e9304ddb">
+			<when
+				expression="#[!isEmpty(payload) and sizeOf(payload) == vars.fetch as Number]">
+				<set-variable value="#[1]" doc:name="route"
+					doc:id="702a94e1-6c7a-4894-aae2-27af0590d404" variableName="route" />
+				<logger level="INFO" doc:name="Batch for a page"
+					doc:id="093e7a56-29ed-4883-b082-367107f527d8"
+					message='#["Running batch for a page"]' />
+				<ee:transform
+					doc:name="payload: salesforce(product2) lumicor db"
+					doc:id="dd6d4a78-28cb-437a-87e1-cb84836b5312">
+					<ee:message>
+						<ee:set-payload
+							resource="dwl/salesforcePayloadMapping.dwl" />
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="Flow Reference"
+					doc:id="c3b4acd8-a224-428e-8bc1-2c108852960f"
+					name="batch-job-full-page-flow" />
+			</when>
+			<when
+				expression="#[!isEmpty(payload) and sizeOf(payload) &lt; vars.fetch as Number]">
+				<set-variable value="#[2]" doc:name="route"
+					doc:id="3a77e4fa-978d-4646-a44f-128ca6fa4cb3" variableName="route" />
+				<logger level="INFO" doc:name="Batch for partial page"
+					doc:id="da9c3132-cded-43c6-8512-79c3fb27caab"
+					message='#["Running batch for a partial page"]' />
+				<ee:transform
+					doc:name="payload: salesforce(product2) lumicor db"
+					doc:id="9e0442c6-3c2a-497f-a76e-32c3ee42e610">
+					<ee:message>
+						<ee:set-payload
+							resource="dwl/salesforcePayloadMapping.dwl" />
+					</ee:message>
+				</ee:transform>
+				<flow-ref doc:name="Flow Reference"
+					doc:id="7424cc68-8ac4-49c2-8a56-ccaac54b643a"
+					name="batch-job-partial-page-flow" />
+			</when>
+			<otherwise>
+				<set-variable value="#[3]" doc:name="route"
+					doc:id="72495be9-6e91-479e-ae9a-1b6b711062d9" variableName="route" />
+				<logger level="INFO" doc:name="No data"
+					doc:id="779c3279-aa3a-4e6c-a1d2-be1d1203afc6"
+					message='#["There is no data in the database to sync"]' />
+				<os:clear doc:name="Clear: offset"
+					doc:id="bc56843a-f0c2-4eea-b60e-c8cfe05f9cb0"
+					objectStore="Object_store_pagination" />
+				<os:retrieve doc:name="Retrieve: offset"
+					doc:id="5330b495-df42-4caf-9d81-123d91580702" key='#["offset"]'
+					objectStore="Object_store_pagination">
+					<os:default-value><![CDATA[#["The object store has been cleared"]]]></os:default-value>
+				</os:retrieve>
+				<logger level="INFO" doc:name="Logger: offset Value"
+					doc:id="d3b6138d-4063-4823-81d2-f17c74b33e5b"
+					message='#["Offset retrieved is : " ++ payload as String]' />
+			</otherwise>
+		</choice>
+		<choice doc:name="Choice"
+			doc:id="0bfcac87-a1df-4e5a-b36b-1247c6ff2f02">
+			<when expression="#[vars.route != 1]">
+				<logger level="INFO" doc:name="not in route 1"
+					doc:id="a2d2d85a-0927-46ff-87df-13c4e71c9ae2"
+					message='#["Went in other than first route"]' />
+				<os:store doc:name="Store: DateTimeTempStorage"
+					doc:id="f140b9ac-9005-4fa0-a0aa-c3650e3fc8df"
+					objectStore="Object_store" key='#["DateTimeTempStorage"]'>
+					<os:value><![CDATA[#[vars.runTime]]]></os:value>
+				</os:store>
+				<os:retrieve doc:name="Retrieve:  DateTimeTempStorage"
+					doc:id="dfdcbc28-8aec-4c39-8a86-ac5003be16be"
+					key='#["DateTimeTempStorage"]' objectStore="Object_store">
+					<os:default-value><![CDATA[#["The value is not saved properly"]]]></os:default-value>
+				</os:retrieve>
+				<logger level="INFO"
+					doc:name="Logger: DateTimeTempStorage value"
+					doc:id="8db23f0b-53d7-4abe-b29e-1969517d3c81" message="#[payload]" />
+			</when>
+			<otherwise>
+				<logger level="INFO" doc:name="went in route 1"
+					doc:id="86c931c8-a121-4e32-a3c1-dd74adbba84b"
+					message='#["Went in route 1"]' />
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="End of flow"
+			doc:id="6349042a-6aa8-4127-9f23-13cb2d4ba686"
+			message='#["End of the flow"]' />
+	</flow>
+</mule>

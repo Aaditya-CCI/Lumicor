@@ -3,7 +3,7 @@
     <http:listener-config name="products-mssql-sf-sync-app-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="8081" />
     </http:listener-config>
-    <apikit:config name="products-mssql-sf-sync-app-config" api="resource::7d94ceec-ed67-483d-81fa-7869180490d2:products-mssql-sf-sync-app:1.0.0:raml:zip:products-mssql-sf-sync-app.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <apikit:config name="products-mssql-sf-sync-app-config" api="resource::7d94ceec-ed67-483d-81fa-7869180490d2:products-mssql-sf-sync-app:1.0.1:raml:zip:products-mssql-sf-sync-app.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
     <flow name="products-mssql-sf-sync-app-main">
         <http:listener config-ref="products-mssql-sf-sync-app-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
@@ -137,5 +137,8 @@ output application/json
 } as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
             </ee:message>
         </ee:transform>
+    </flow>
+    <flow name="get:\productSync:products-mssql-sf-sync-app-config">
+        <flow-ref doc:name="Flow Reference" doc:id="f4c29353-888d-42e8-890c-fa9a74304ed9" name="product-sync-listener-based-flow-1"/>
     </flow>
 </mule>

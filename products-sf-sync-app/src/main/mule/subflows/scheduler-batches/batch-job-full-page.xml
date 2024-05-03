@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd 
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<flow name="batch-job-full-page-flow" doc:id="86558929-72c3-4979-9d3f-86715d3431a5" >
+		<batch:job jobName="batch-job-scheduler-full-page" doc:id="bba60683-259c-4fa3-8260-4ce7783d2b47" maxFailedRecords="-1" blockSize="200">
+			<batch:process-records >
+				<batch:step name="batch-step-1-full-page" doc:id="f463e426-75aa-4b84-8f2a-6b352fcdbd32" >
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="969f4a1c-5365-44f9-8f4d-b2132ea0c917" size="200" preserveMimeTypes="true">
+						<salesforce:upsert objectType="Product2" externalIdFieldName="ItemID__c" doc:name="lumicorDB to Product" doc:id="58adfd0a-b48f-491b-bf79-60c69a06c406" config-ref="Salesforce_Config" />
+					</batch:aggregator>
+				</batch:step>
+				<batch:step name="batch-step-2-full-page" doc:id="021b8319-a3c3-4ebc-b515-902d367b2e88" >
+					<logger level="INFO" doc:name="Logger: payload" doc:id="858d5705-ec2d-4da0-9f18-5ee7ade536ae" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": payload&#10;}]'/>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<os:store doc:name="Storing offset" doc:id="0709e6b3-e1ce-41e8-8fed-324f6785aa25" key='#["offset"]' objectStore="Object_store_pagination">
+					<os:value ><![CDATA[#[vars.offset as Number + vars.fetch as Number]]]></os:value>
+				</os:store>
+				<vm:publish doc:name="Publish" doc:id="97ce569f-c253-49ad-a629-965c7db680e3" config-ref="VM_Config" queueName="queue_sch">
+					<vm:content ><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	"retDT": vars.retDT,
+	"trackingID": vars.trackingID,
+	"runTime": vars.runTime
+}]]]></vm:content>
+				</vm:publish>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+	</mule>

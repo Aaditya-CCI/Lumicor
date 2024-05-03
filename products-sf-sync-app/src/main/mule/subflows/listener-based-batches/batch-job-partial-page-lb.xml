@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+	<flow name="batch-job-partial-page-lb-flow"
+		doc:id="5822ceb2-30a1-4544-8349-3dba6eb703c7">
+		<batch:job jobName="batch-job-1-for-partial-page-lb"
+			doc:id="e9b998cb-b1f2-4e39-b81d-848e51786a0c" maxFailedRecords="-1"
+			blockSize="200">
+			<batch:process-records>
+				<batch:step name="batch-step-1-lb"
+					doc:id="b9aafb2f-49ec-4cb7-b6c5-38394a58e0c2">
+					<batch:aggregator doc:name="Batch Aggregator"
+						doc:id="70d18f4a-47b0-48d7-bcde-875214dc9989" size="200"
+						preserveMimeTypes="true">
+						<salesforce:upsert objectType="Product2"
+							externalIdFieldName="ItemID__c" doc:name="lumicorDB to Product"
+							doc:id="53eb3c2a-e9ab-4205-9c3c-774f919cef40"
+							config-ref="Salesforce_Config" />
+
+					</batch:aggregator>
+				</batch:step>
+				<batch:step name="batch-step-2-lb"
+					doc:id="347eb295-0968-4783-8b8f-a1b58d3de0f5"
+					acceptPolicy="ONLY_FAILURES">
+					<logger level="INFO" doc:name="Logger: payload"
+						doc:id="e08e444e-c338-4afd-8305-ecb809258e0b"
+						message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": payload&#10;}]' />
+				</batch:step>
+
+			</batch:process-records>
+			<batch:on-complete>
+				<os:clear doc:name="Clear: offset"
+					doc:id="730e4721-2519-41cf-9f6e-fed16924793b"
+					objectStore="Object_store_pagination_lb" />
+				<os:retrieve doc:name="Retrieve offset"
+					doc:id="96cad7af-a843-421b-b58a-76aa13df1a40" key='#["offset"]'
+					objectStore="Object_store_pagination_lb">
+					<os:default-value><![CDATA[#["The offset object store has been cleared"]]]></os:default-value>
+				</os:retrieve>
+				<logger level="INFO" doc:name="offset value"
+					doc:id="6fd3966d-3e0c-4915-88de-3bce4b6a6a8c"
+					message='#["Offset retrieved is : " ++ payload as String]' />
+				<logger level="INFO" doc:name="Records synced successfully"
+					doc:id="6f0a6394-178a-4b3e-84c5-7628f8743ba1"
+					message='#["All records synced successfully"]' />
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+</mule>

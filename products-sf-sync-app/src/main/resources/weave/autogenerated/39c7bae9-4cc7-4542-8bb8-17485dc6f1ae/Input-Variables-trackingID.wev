@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_39c7bae9_4cc7_4542_8bb8_17485dc6f1ae_Input_Variables_trackingID = Any
+
