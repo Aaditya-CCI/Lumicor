@@ -28,10 +28,6 @@ http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/cu
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="8ad86a3f-cd5a-4c17-afc9-6ed54cfea021" >
 		<http:listener-connection host="0.0.0.0" port="8081" />
 	</http:listener-config>
-	<!-- [STUDIO:"product-sync-2Flow3"]<flow name="product-sync-2Flow3" doc:id="08e63b8d-386b-4537-a04b-4ef2b0ccfdff" >
-		<http:listener doc:name="Listener" doc:id="1447c0f9-30dd-451d-a95d-f976ba199d67" config-ref="HTTP_Listener_config" path="productSync"/>
-		<flow-ref doc:name="Flow Reference" doc:id="d9f43cda-e843-469a-98b9-da786f76a886" name="product-sync-2Flow"/>
-	</flow> [STUDIO] -->
 	<flow name="product-sync-2Flow" doc:id="ccf4a115-ec9c-4d09-9bc3-5bac1d4bfdfb" >
 		<scheduler doc:name="Scheduler" doc:id="f9b1afe0-c09c-4422-8ab8-d7743ce9da26">
 			<scheduling-strategy>
@@ -452,66 +448,5 @@ output application/json
 			</batch:on-complete>
 		</batch:job>
 	</flow>
-	<!-- [STUDIO:"product-sync-2"]<flow name="product-sync-2" doc:id="182a5754-8866-4ea4-8316-17a1a9f5677f">
-		<logger level="INFO" doc:name="Start" doc:id="8d3fe1c3-19cf-4d74-9ac4-cc9e6643e24d" message='#["Start of the flow"&#93;' />
-		<set-variable value='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;now() as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}&#93;' doc:name="var: runTime" doc:id="fff9eff6-554c-4358-a900-7079710e897e" variableName="runTime" />
-		<os:retrieve doc:id="b47f412b-3b0b-40f5-bfea-8a1709936773" key='#["DateTimeTempStorage"&#93;' objectStore="Object_store" doc:name="Retrieve: DateTimeTempStorage" target="retDT">
-			<os:default-value><![CDATA[#[%dw 2.0
-output application/json
-&#45;&#45;-
-(now() - |PT1H|) as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}&#93;&#93;&#93;></os:default-value>
-		</os:retrieve>
-		<http:request method="GET" doc:name="Request" doc:id="75cb77b9-342f-4c77-bb47-5259150e853b" config-ref="HTTP_Request_configuration" path="/test" />
-		<db:select doc:name="Select" doc:id="8baca470-15e2-4578-8cee-4fbae84c6ddd" config-ref="Database_Config">
-			<db:sql><![CDATA[select * from sampleInfo1 where lastModified > :lemon&#93;&#93;></db:sql>
-			<db:input-parameters><![CDATA[#[{
-	lemon: vars.retDT
-}&#93;&#93;&#93;></db:input-parameters>
-		</db:select>
-		<logger level="INFO" doc:name="Logger" doc:id="72b1426c-1388-4a51-a18c-2da7c36d69d4" message='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;{&#10;	"updatedOrChangedData": payload&#10;}&#93;' />
-		<ee:transform doc:name="Transform Message" doc:id="fafe33f8-6240-4b6e-a147-a07bb6d5065a">
-			<ee:message>
-				<ee:set-payload><![CDATA[%dw 2.0
-output application/java
-&#45;&#45;-
-payload map {
-	serial_number__c: $.id,
-	student_name__c: $.name,
-	email__c: $.email,
-	roll_number__c: $.rollno,
-	lastModified__c: $.lastModified
-}&#93;&#93;></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-		<batch:job jobName="product-sync-pocBatch_Job" doc:id="35963035-eddb-4829-b8a5-5428b0e87bef" maxFailedRecords="-1"> <batch:process-records> <batch:step name="Batch_Step" doc:id="5c391a57-822a-46f3-b6e2-952ae87dd5f9"> <salesforce:upsert doc:name="Upsert" doc:id="fa24d578-a435-4be6-8eea-f7206dd33550" config-ref="Salesforce_Config" objectType="sampleInfo__c" externalIdFieldName="roll_number__c">
-		</salesforce:upsert>
-					<logger level="INFO" doc:name="Logger" doc:id="739df674-8b41-47f3-a9d6-36e2c5afc4e7" message="#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;payload&#93;" />
-					<validation:is-false doc:name="Is false" doc:id="4c302628-096f-4786-8f1a-b4567383ff02" expression="#[payload.successful == false&#93;" message='#["Failed while 
-			upserting a record"&#93;' /> </batch:step> <batch:step name="Batch_Step1" doc:id="778db9ce-e362-4ecb-a00d-0cd826f3c1e5" acceptPolicy="ONLY_FAILURES"> 
-			<logger level="INFO" doc:name="Logger" doc:id="0fa55a1c-6ab1-4125-b469-1bfec1b7339b" message="#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;payload&#93;" /> 
-			</batch:step> </batch:process-records>
-			<batch:on-complete>
-				<logger level="INFO" doc:name="Logger" doc:id="60f2f19d-fb70-48d9-98e0-e23da2d9d8dc" message='#["The data has been upserted"&#93;' />
-				<os:store doc:name="Store" doc:id="5a1fd105-f36e-4612-bd49-e490e8fc84d4" key='#["DateTimeTempStorage"&#93;' objectStore="Object_store">
-			<os:value><![CDATA[#[vars.runTime&#93;&#93;&#93;></os:value>
-		</os:store>
-				<os:retrieve doc:name="Retrieve" doc:id="c6c80a11-5d28-4e64-ae51-04cd04314e1a" key='#["DateTimeTempStorage"&#93;' objectStore="Object_store">
-			<os:default-value><![CDATA[#["The value is not saved properly"&#93;&#93;&#93;></os:default-value>
-		</os:retrieve>
-				<logger level="INFO" doc:name="Logger" doc:id="d1990d45-de73-41ab-b72f-e9ee5f629421" message='#["Fetched value from object store is " ++ payload as String&#93;' />
-				<logger level="INFO" doc:name="End of flow" doc:id="aebbf074-8768-4ac4-8954-6c05161fce59" message='#["After batch job"&#93;' />
-			</batch:on-complete> 
-</batch:job>
-		<ee:transform doc:name="Transform Message" doc:id="06dc8128-5ee5-4a5b-a2fb-2e2c72148075">
-			<ee:message>
-				<ee:set-payload><![CDATA[%dw 2.0
-output application/java
-&#45;&#45;-
-{
-}&#93;&#93;></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-	
-</flow> [STUDIO] -->
 
 </mule>
