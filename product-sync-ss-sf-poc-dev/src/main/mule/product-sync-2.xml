@@ -31,7 +31,7 @@ http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/cu
 	<flow name="product-sync-2Flow" doc:id="ccf4a115-ec9c-4d09-9bc3-5bac1d4bfdfb" >
 		<scheduler doc:name="Scheduler" doc:id="f9b1afe0-c09c-4422-8ab8-d7743ce9da26">
 			<scheduling-strategy>
-				<fixed-frequency frequency="15" timeUnit="MINUTES" />
+				<fixed-frequency frequency="5" timeUnit="MINUTES" />
 			</scheduling-strategy>
 		</scheduler>
 		<os:retrieve doc:name="Retrieve: DateTimeTempStorage" doc:id="59fa305c-1d56-438b-8685-552fd0107c50" key='#["DateTimeTempStorage"]' objectStore="Object_store" target="retDT">
