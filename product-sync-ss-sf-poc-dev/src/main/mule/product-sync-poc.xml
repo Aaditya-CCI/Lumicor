@@ -31,12 +31,12 @@ http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/cu
 			</scheduling-strategy>
 		</scheduler>
 		<logger level="INFO" doc:name="Start" doc:id="d6017408-282c-452d-b653-7e954dc47eda" message='#["Start of the flow"&#93;'/>
-		<set-variable value='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;now() as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}&#93;' doc:name="var: runTime" doc:id="4d7cf179-4c8f-43ba-806e-462ac02d4aca" variableName="runTime"/>
+		<set-variable value='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;now() as DateTime {format: "yyyy-MM-dd HH:mm:ss.SSS"}&#93;' doc:name="var: runTime" doc:id="4d7cf179-4c8f-43ba-806e-462ac02d4aca" variableName="runTime"/>
 		<os:retrieve doc:id="ffb23105-476c-4c62-b51d-4c2a15569300" key='#["DateTimeTempStorage"&#93;' objectStore="Object_store" doc:name="Retrieve: DateTimeTempStorage" target="retDT">
 			<os:default-value ><![CDATA[#[%dw 2.0
 output application/json
 &#45;&#45;-
-(now() - |PT1H|) as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}&#93;&#93;&#93;></os:default-value>
+(now() - |PT1H|) as DateTime {format: "yyyy-MM-dd HH:mm:ss.SSS"}&#93;&#93;&#93;></os:default-value>
 		</os:retrieve>
 		<http:request method="GET" doc:name="Request" doc:id="f0339f6d-b528-48a5-a011-6af4c4d47f06" config-ref="HTTP_Request_configuration" path="/test"/>
 		<db:select doc:name="Select" doc:id="e9f14b74-f950-4a30-99e8-225f6e9906ec" config-ref="Database_Config">

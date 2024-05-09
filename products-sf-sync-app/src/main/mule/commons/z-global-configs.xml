@@ -1,30 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+<mule xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
 	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
 	xmlns:os="http://www.mulesoft.org/schema/mule/os"
 	xmlns:db="http://www.mulesoft.org/schema/mule/db"
 	xmlns:http="http://www.mulesoft.org/schema/mule/http"
 	xmlns="http://www.mulesoft.org/schema/mule/core"
 	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
 http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd 
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
-http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
 	<os:object-store name="Object_store"
 		doc:name="Object store" doc:id="58733a20-749f-4eeb-8d43-baef768a081e" />
 	<salesforce:sfdc-config name="Salesforce_Config"
 		doc:name="Salesforce Config"
 		doc:id="c6e1cb90-47bc-4251-9de2-f4227a6ce11f">
 		<salesforce:oauth-user-pass-connection
-			tokenEndpoint="https://test.salesforce.com/services/oauth2/token"
-			consumerKey="3MVG9EJ2FoGDnkgVlM4AGOpK3BEs4AIfwk.hI3xOiSsSCrbIOmDCXjPcJyVDbR2EHKbhPuX0FgV747ZxiFeHc"
-			consumerSecret="49A1002C901D27EEF5AAE2D07B46DBEC73FE24BD34B5748EEF2E1241E39BCD22"
-			username="aaditya.duggal@lumicor.dev1" password="Aaditya@742"
-			securityToken="uUy7wPIi14kQAP5y9R8nAJ0MZ" />
+			tokenEndpoint="${Salesforce.TokenEndpoint}"
+			consumerKey="${secure::Salesforce.consumerKey}"
+			consumerSecret="${secure::Salesforce.consumerSecret}"
+			username="${Salesforce.userName}" password="${secure::Salesforce.password}"
+			securityToken="${secure::Salesforce.securityToken}" />
 	</salesforce:sfdc-config>
 	<http:request-config
 		name="HTTP_Request_configuration"
@@ -36,10 +37,10 @@ http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mu
 	<db:config name="Database_Config_lumicor_db"
 		doc:name="Database Config"
 		doc:id="0aa43e25-cc6f-402e-8e8e-2f1c31a4ff6c">
-		<db:mssql-connection host="10.0.10.45"
-			instanceName="MSSQLSERVER" port="1433" user="MuleSoftIntegration"
-			password="Y4&lt;Uy{M-&quot;2jv=7~Bzk}/W:N65s%QTphf'bga!ec^8$3;JqD*XK"
-			databaseName="iERP90_SANDBOX" />
+		<db:mssql-connection host="${Database.Host}"
+			instanceName="${secure::Database.InstanceName}" port="${Database.Port}" user="${Database.User}"
+			password="${secure::Database.password}"
+			databaseName="${secure::Database.DBName}" />
 	</db:config>
 	<vm:config name="VM_Config" doc:name="VM Config"
 		doc:id="eaff5d02-ec6e-4c2c-ad9e-cfed580f2562">
@@ -53,4 +54,9 @@ http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mu
 		doc:name="Object store" doc:id="c341882e-7970-4a03-9448-689f38163c89" />
 	<os:object-store name="Object_store_pagination_lb"
 		doc:name="Object store" doc:id="aaeef0e5-3851-483a-8f49-fdcc03d4cd13" />
+	<configuration-properties doc:name="Configuration properties" doc:id="78eaa0f3-3100-44a4-82c0-51891478e077" file="properties\common-config.yaml" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="2f9aeaca-c999-404b-82a9-22b02b2da735" file="properties\config-secure-${mule.env}.yaml" key="${secure.key}" >
+		<secure-properties:encrypt algorithm="Blowfish" />
+	</secure-properties:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="c77916df-81ce-429c-9d53-ddf77566a814" file="properties\config-${mule.env}.yaml" />
 </mule>

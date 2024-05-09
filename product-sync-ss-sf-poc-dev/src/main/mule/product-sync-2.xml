@@ -38,7 +38,7 @@ http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/cu
 			<os:default-value ><![CDATA[#[%dw 2.0
 output application/json
 ---
-(now() - |PT1H|) as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}]]]></os:default-value>
+(now() >> "PST" - |PT1H|) as DateTime {format: "yyyy-MM-dd HH:mm:ss.SSS"}]]]></os:default-value>
 		</os:retrieve>
 		<ee:transform doc:name="payload: retDT, trackingID" doc:id="2e7872f2-e1a1-4d4a-9996-30c520be96f9" >
 			<ee:message >
@@ -48,7 +48,7 @@ output application/json
 {
 	"retDT": vars.retDT,
 	"trackingID": uuid(),
-	"runTime": now() as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}
+	"runTime": (now() >> "PST") as DateTime {format: "yyyy-MM-dd HH:mm:ss.SSS"}
 }]]></ee:set-payload>
 			</ee:message>
 			<ee:variables >
@@ -400,7 +400,7 @@ payload map {
 						<logger level="INFO" doc:name="logging upsert result" doc:id="f3a21adb-2896-4de3-aa7b-d01c52e3c243" message="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.upsertRes]"/>
 					</batch:aggregator>
 				</batch:step>
-				<batch:step name="Batch_Step-sch1" doc:id="b5dc64e2-61f4-49ad-ab2a-438fb2db81c3" >
+				<batch:step name="Batch_Step-sch1" doc:id="b5dc64e2-61f4-49ad-ab2a-438fb2db81c3" acceptPolicy="ONLY_FAILURES">
 					<logger level="INFO" doc:name="Logger: payload" doc:id="bab5478e-2eb2-4e10-915f-7bfc2b6bf218" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": payload&#10;}]'/>
 				</batch:step>
 			</batch:process-records>
@@ -434,7 +434,7 @@ output application/json
 						<logger level="INFO" doc:name="logging upsert result" doc:id="d58a4429-8a9e-416f-bb38-a66e402bb1b9" message="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.upsertRes]" />
 					</batch:aggregator>
 				</batch:step>
-				<batch:step name="Batch_Step2" doc:id="a0f61101-a33a-46e1-8a6b-f2ce954db698" >
+				<batch:step name="Batch_Step2" doc:id="a0f61101-a33a-46e1-8a6b-f2ce954db698" acceptPolicy="ONLY_FAILURES">
 					<logger level="INFO" doc:name="Logger: payload" doc:id="c7f56a2f-9dcc-4e6a-8320-3aaad013643e" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": payload&#10;}]'/>
 				</batch:step>
 			</batch:process-records>
