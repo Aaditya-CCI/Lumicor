@@ -1,0 +1,8 @@
+Database:
+  Host: "10.0.10.45"
+  Port: "1433"
+  User: "MuleSoftIntegration"
+  
+Salesforce:
+  userName: "aaditya.duggal@lumicor.dev1"
+  TokenEndpoint: "https://test.salesforce.com/services/oauth2/token"

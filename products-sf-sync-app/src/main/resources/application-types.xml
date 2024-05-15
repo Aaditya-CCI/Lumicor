@@ -526,4 +526,6 @@ type: string]]></types:shape>
       </types:output-event>
     </types:processor-declaration>
   </types:enrichment>
+  <types:enrichment select="#e7cddc26-c908-46e5-8ec2-7e99a086631f"/>
+  <types:enrichment select="#915339db-3d3f-4d5d-bd72-3a2b9f953643"/>
 </types:mule>

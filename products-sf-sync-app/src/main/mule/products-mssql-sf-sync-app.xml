@@ -124,7 +124,8 @@ output application/json
         </error-handler>
     </flow>
     <flow name="get:\health-check:products-mssql-sf-sync-app-config">
-        <ee:transform doc:name="Transform Message">
+        <flow-ref doc:name="Flow Reference" doc:id="7c685556-d2e7-439c-8b12-0ab52f664f91" name="health-check-flow"/>
+		<ee:transform doc:name="Transform Message">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json

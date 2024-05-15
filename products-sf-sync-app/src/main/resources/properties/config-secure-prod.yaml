@@ -1,0 +1,10 @@
+Database:
+  InstanceName: "![4fNX52Fjo276LRExI1BKEA==]"
+  password: "![vx4NaPpLgcsmkUUZf6VCqkFFMuujGhrrcJ7DVfhSOkpWg/x6nmqYBSSGqzWPW8wpITc+PBVfAAk=]"
+  DBName: "![v2yuQkwVnHHD5bBeSV0T3A==]"
+
+Salesforce:
+  consumerKey: "![YLdJq1lAZRNxFgMB86Y6MVyEY0lv4vYGVDNXubkOGREQ4J/Xo2+0FimOVx6bnopmz8ON9H7UZHuOwqrPjiSvQ/KN1gzCeHbDB4jgjgeToUsr2mA1oohOpg==]"
+  consumerSecret: "![6rbuoBwN4abKkKmINmYb0Y4nhIrM2wpfNGHKMjaNKprdSphQJCIrrc4VEBZq8iVhMnxvPEqbuPF9lu0gdt8l0+7Bpr8kgUPR]"
+  password: "![gMXm9RAZD4Ij+qR8HOt5tA==]"
+  securityToken: "![iUWd6ZGdR3MHmwtGzvIrecj8JQ/z87vNBan5+L5fueU=]"
