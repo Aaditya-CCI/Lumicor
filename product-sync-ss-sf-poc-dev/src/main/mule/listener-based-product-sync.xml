@@ -370,67 +370,15 @@ payload map {
 			<batch:process-records >
 				<batch:step name="bp-lb-batch-step1" doc:id="dc447a26-80da-4be2-820f-f2cd7c0790e9" >
 					<batch:aggregator doc:name="Batch Aggregator" doc:id="591453e2-550d-463c-beae-e086f2f92b72" size="200" preserveMimeTypes="true">
-						<ee:transform doc:name="var: productUpsertBody" doc:id="9ca98a05-1a60-41c7-92ce-e090cec7db76">
-							<ee:message />
-							<ee:variables>
-								<ee:set-variable variableName="productUpsertBody" ><![CDATA[%dw 2.0
-output application/java
----
-payload]]></ee:set-variable>
-							</ee:variables>
-						</ee:transform>
 						<!-- [STUDIO:"sample db"]<salesforce:upsert objectType="sampleInfo__c" doc:name="sample db" doc:id="1c78708f-45b5-403f-ad0d-599795fd6bd8" config-ref="Salesforce_Config" externalIdFieldName="roll_number__c" target="upsertRes"/> [STUDIO] -->
 						<!-- [STUDIO:"lumicorDB"]<salesforce:upsert doc:name="lumicorDB" doc:id="2368aeea-3f18-4996-a619-725356b93624" config-ref="Salesforce_Config" objectType="ProductPlayground__c" externalIdFieldName="item_id__c"/> [STUDIO] -->
 						<salesforce:upsert objectType="Product2" externalIdFieldName="ItemID__c" doc:name="lumicorDB to Product2" doc:id="5d84b7cf-66fa-456c-9485-e4cbee6f1ab9" config-ref="Salesforce_Config" />
-						<ee:transform doc:name="var: indices" doc:id="fd77acbe-765e-4455-b67b-87479c033528">
-							<ee:message />
-							<ee:variables>
-								<ee:set-variable variableName="indices"><![CDATA[%dw 2.0
-output application/json
----
-{
-    "success": payload.items map (if($.successful == true)($$) else(-1)) -- [-1],
-    "failures": payload.items map (if($.successful == false)($$) else(-1)) -- [-1]
-}]]></ee:set-variable>
-							</ee:variables>
-						</ee:transform>
-						<ee:transform doc:name="var: bodyForPriceBookEntry" doc:id="d8623e6c-640b-46c6-ab32-034c8d16cadc" >
-							<ee:message >
-							</ee:message>
-							<ee:variables >
-								<ee:set-variable variableName="bodyForPriceBookEntry" ><![CDATA[%dw 2.0
-output application/java
----
-vars.productUpsertBody map(
-	if(vars.indices.success contains ($$))({
-		"External_Id__c": $.ItemID__c,
-		"Product2Id": payload.items[$$ as Number].id,
-		"PriceBook2Id": "01s1N000007rSTvQAM",
-		"UnitPrice": $.Price__c,
-		"IsActive": true
-	}) else (-1)
-) -- [-1]]]></ee:set-variable>
-							</ee:variables>
-						</ee:transform>
-						<salesforce:upsert objectType="PricebookEntry" externalIdFieldName="External_Id__c" doc:name="Upsert: PriceBookEntry" doc:id="24f9cd3f-f9e5-4dcf-ac50-b9681e7cb549" config-ref="Salesforce_Config">
-							<salesforce:records><![CDATA[#[vars.bodyForPriceBookEntry]]]></salesforce:records>
-						</salesforce:upsert>
-						<logger level="INFO" doc:name="Logger: Printing pricebook fails" doc:id="48af41b7-76c7-4f4d-ae3e-0d08332a0733" message='#[%dw 2.0&#10;output application/json&#10;---&#10;payload.items filter($.successful == false)&#10;map(&#10;	$ mapObject(&#10;		if(($$) as String == "exception")(($$): false) else (($$): $)&#10;	)&#10;)]'/>
-						<ee:transform doc:name="var: fails" doc:id="2a5b6e4b-1079-49b6-9682-ee0e4afea678">
-							<ee:message />
-							<ee:variables>
-								<ee:set-variable variableName="fails"><![CDATA[%dw 2.0
-output application/json
----
-vars.productUpsertBody map(
-	if(vars.indices.failures contains ($$))($) else (-1)
-) -- [-1]]]></ee:set-variable>
-							</ee:variables>
-						</ee:transform>
-						<logger level="INFO" doc:name="Logger: fails" doc:id="a9d99a4e-cab4-4593-b83d-7885957a6b4c" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": vars.fails&#10;}]' />
-						<logger level="INFO" doc:name="logging upsert result" doc:id="a7f74ef9-2116-4f7d-910c-1f62a1b7898e" message="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.upsertRes]"/>
+						<logger level="INFO" doc:name="logging upsert result" doc:id="a7f74ef9-2116-4f7d-910c-1f62a1b7898e" message="#[%dw 2.0&#10;output application/json&#10;---&#10;payload]" />
 					
 </batch:aggregator>
+				</batch:step>
+				<batch:step name="Batch_Step_lb-1" doc:id="390c4d0b-415c-4975-b7bc-7cc49f5b9500" acceptPolicy="ONLY_FAILURES">
+					<logger level="INFO" doc:name="Logger: Printing error records" doc:id="58ec847c-76d7-48fe-a81c-5faa6a5db47e" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": payload&#10;}]'/>
 				</batch:step>
 			
 </batch:process-records>
@@ -456,69 +404,15 @@ output application/json
 			<batch:process-records >
 				<batch:step name="bp2-lb-batch-step1" doc:id="ba55fd28-b6bd-49f0-ae68-bd2f098eccfe" >
 					<batch:aggregator doc:name="Batch Aggregator" doc:id="2a84dacc-08e0-4011-8a78-a40c49cfdf1d" size="200" preserveMimeTypes="true">
-						<ee:transform doc:name="var: productUpsertBody" doc:id="287178ff-e46f-4518-9b01-40d98ee8c5b4" >
-							<ee:message >
-							</ee:message>
-							<ee:variables >
-								<ee:set-variable variableName="productUpsertBody" ><![CDATA[%dw 2.0
-output application/java
----
-payload]]></ee:set-variable>
-							</ee:variables>
-						</ee:transform>
 						<!-- [STUDIO:"sample db"]<salesforce:upsert objectType="sampleInfo__c" externalIdFieldName="roll_number__c" doc:name="sample db" doc:id="eebfc564-ff24-4c89-bada-376aa138f1c2" config-ref="Salesforce_Config" target="upsertRes" /> [STUDIO] -->
 						<!-- [STUDIO:"LumicorDB"]<salesforce:upsert doc:name="LumicorDB" doc:id="3e0e462f-d955-43df-a344-451199686cac" config-ref="Salesforce_Config" objectType="ProductPlayground__c" externalIdFieldName="item_id__c"/> [STUDIO] -->
 						<salesforce:upsert objectType="Product2" externalIdFieldName="ItemID__c" doc:name="lumicorDB to Product" doc:id="0421a786-0bd2-4577-bd38-67af1c2e9d8e" config-ref="Salesforce_Config" />
-						<ee:transform doc:name="var: indices" doc:id="c4d4ba4c-bbdb-41d5-92b7-342a5ef6e42a" >
-							<ee:message >
-							</ee:message>
-							<ee:variables >
-								<ee:set-variable variableName="indices" ><![CDATA[%dw 2.0
-output application/json
----
-{
-    "success": payload.items map (if($.successful == true)($$) else(-1)) -- [-1],
-    "failures": payload.items map (if($.successful == false)($$) else(-1)) -- [-1]
-}]]></ee:set-variable>
-							</ee:variables>
-						</ee:transform>
-						<ee:transform doc:name="var: bodyForPriceBookEntry" doc:id="1e14367c-f8d0-45d8-a7ba-fc1ddd6afce9" >
-							<ee:message >
-							</ee:message>
-							<ee:variables >
-								<ee:set-variable variableName="bodyForPriceBookEntry" ><![CDATA[%dw 2.0
-output application/java
----
-vars.productUpsertBody map(
-	if(vars.indices.success contains ($$))({
-		"External_Id__c": $.ItemID__c,
-		"Product2Id": payload.items[$$ as Number].id,
-		"PriceBook2Id": "01s1N000007rSTvQAM",
-		"UnitPrice": $.Price__c,
-		"IsActive": true
-	}) else (-1)
-) -- [-1]]]></ee:set-variable>
-							</ee:variables>
-						</ee:transform>
-						<salesforce:upsert objectType="PricebookEntry" externalIdFieldName="External_Id__c" doc:name="Upsert: PriceBookEntry" doc:id="afacd9c8-0c9e-4551-999f-1e48465929a3" config-ref="Salesforce_Config">
-							<salesforce:records><![CDATA[#[vars.bodyForPriceBookEntry]]]></salesforce:records>
-						</salesforce:upsert>
-						<logger level="INFO" doc:name="Logger: Printing pricebook fails1" doc:id="73f9fc78-4e91-488d-9d0a-67e082661ce7" message='#[%dw 2.0&#10;output application/json&#10;---&#10;payload.items filter($.successful == false)&#10;map(&#10;	$ mapObject(&#10;		if(($$) as String == "exception")(($$): false) else (($$): $)&#10;	)&#10;)]' />
-						<ee:transform doc:name="var: fails" doc:id="91165607-7f07-4925-86c6-447c6b7af79e">
-							<ee:message />
-							<ee:variables>
-								<ee:set-variable variableName="fails"><![CDATA[%dw 2.0
-output application/json
----
-vars.productUpsertBody map(
-	if(vars.indices.failures contains ($$))($) else (-1)
-) -- [-1]]]></ee:set-variable>
-							</ee:variables>
-						</ee:transform>
-						<logger level="INFO" doc:name="Logger: fails" doc:id="db289b4b-f472-4c94-ae4b-aa071f282bbc" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": vars.fails&#10;}]' />
 						<logger level="INFO" doc:name="logging upsert result" doc:id="01acfa08-8748-4a77-8bbc-cf35ff1e91f1" message="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.upsertRes]" />
 					
 </batch:aggregator>
+				</batch:step>
+				<batch:step name="Batch_Step" doc:id="d9a5ac16-e306-47c6-9b6f-123eb1b20441" >
+					<logger level="INFO" doc:name="Logger: Printing error records" doc:id="8d3e37b9-087b-4a38-8c10-84710126f6dc" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": payload&#10;}]'/>
 				</batch:step>
 			
 </batch:process-records>
