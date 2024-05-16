@@ -8,7 +8,7 @@ payload map {
     "SupercededItemID__c": $.IMA_SupercededItemID,
     "ItemName__c": $.IMA_ItemName,
     "Description": $.IMS_LongDesc,
-    "Classification__c": $.IMA_Classification, 
+    "Product_Category__c": $.IMA_Classification, 
     "UnitMeasure__c": $.IMA_UnitMeasure,
     "Price__c": $.IMA_Price,
     "PriceMatrixFlag__c": $.IMA_PriceMatrixFlag,

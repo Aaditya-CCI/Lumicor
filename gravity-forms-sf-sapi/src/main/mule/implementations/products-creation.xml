@@ -202,7 +202,7 @@ var backAddons = addOns reduce ((item, back_Add_ons = []) -> if(["Luminous", "Op
 							<ee:set-variable variableName="productName" ><![CDATA[%dw 2.0
 output application/java
 ---
-"productName = " ++ (([payload."Décor"] ++ [payload.Gauge] ++ [payload."Resin Type"] ++ [payload."Panel Size"]) joinBy  ", ") ++ "\n" ++ "vars.allAddons = " ++ (vars.allAddons.front_vars.allAddons ++ vars.allAddons.back_vars.allAddons joinBy  ",")]]></ee:set-variable>
+"productName = " ++ (([payload."Décor"] ++ [payload.Gauge] ++ [payload."Resin Type"] ++ [payload."Panel Size"]) joinBy  ", ") ++ "\n" ++ "Addons = " ++ (vars.allAddons.front_addons ++ vars.allAddons.back_addons joinBy  ",")]]></ee:set-variable>
 						</ee:variables>
 					</ee:transform>
 					<choice doc:name="Choice" doc:id="a5ec85ca-4fff-45ce-a709-e31a99caebf7" >
@@ -213,6 +213,13 @@ output application/java
 								<ee:variables >
 									<ee:set-variable variableName="productQuery" ><![CDATA[%dw 2.0
 output application/java
+
+fun permute(arr) =
+    if (sizeOf(arr) <= 1) [arr]
+    else flatten (arr map ((item, index) -> 
+        permute(arr filter ((it, idx) -> idx != index)) 
+            map ((subPerm) -> [item] ++ subPerm)))
+
 var finalAddons = {
     "FA": if(sizeOf(vars.allAddons.front_addons) < 3)(vars.allAddons.front_addons ++ (1 to (3 - sizeOf(vars.allAddons.front_addons)) map (''))) else vars.allAddons.front_addons,
     "BA": if(sizeOf(vars.allAddons.back_addons) < 3)(vars.allAddons.back_addons ++ (1 to (3 - sizeOf(vars.allAddons.back_addons)) map (''))) else vars.allAddons.back_addons
