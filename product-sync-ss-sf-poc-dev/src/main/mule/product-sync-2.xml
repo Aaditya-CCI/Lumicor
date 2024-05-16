@@ -28,21 +28,18 @@ http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/cu
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="8ad86a3f-cd5a-4c17-afc9-6ed54cfea021" >
 		<http:listener-connection host="0.0.0.0" port="8081" />
 	</http:listener-config>
-	<!-- [STUDIO:"product-sync-2Flow3"]<flow name="product-sync-2Flow3" doc:id="08e63b8d-386b-4537-a04b-4ef2b0ccfdff" >
-		<http:listener doc:name="Listener" doc:id="1447c0f9-30dd-451d-a95d-f976ba199d67" config-ref="HTTP_Listener_config" path="productSync"/>
-		<flow-ref doc:name="Flow Reference" doc:id="d9f43cda-e843-469a-98b9-da786f76a886" name="product-sync-2Flow"/>
-	</flow> [STUDIO] -->
+	<os:object-store name="Object_store_batch_fails" doc:name="Object store" doc:id="880eeacb-1937-4b72-9a99-84857f531e47" />
 	<flow name="product-sync-2Flow" doc:id="ccf4a115-ec9c-4d09-9bc3-5bac1d4bfdfb" >
 		<scheduler doc:name="Scheduler" doc:id="f9b1afe0-c09c-4422-8ab8-d7743ce9da26">
 			<scheduling-strategy>
-				<fixed-frequency frequency="15" timeUnit="MINUTES" />
+				<fixed-frequency frequency="5" timeUnit="MINUTES" />
 			</scheduling-strategy>
 		</scheduler>
 		<os:retrieve doc:name="Retrieve: DateTimeTempStorage" doc:id="59fa305c-1d56-438b-8685-552fd0107c50" key='#["DateTimeTempStorage"]' objectStore="Object_store" target="retDT">
 			<os:default-value ><![CDATA[#[%dw 2.0
 output application/json
 ---
-(now() - |PT1H|) as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}]]]></os:default-value>
+(now() >> "PST" - |PT1H|) as DateTime {format: "yyyy-MM-dd HH:mm:ss.SSS"}]]]></os:default-value>
 		</os:retrieve>
 		<ee:transform doc:name="payload: retDT, trackingID" doc:id="2e7872f2-e1a1-4d4a-9996-30c520be96f9" >
 			<ee:message >
@@ -52,7 +49,7 @@ output application/json
 {
 	"retDT": vars.retDT,
 	"trackingID": uuid(),
-	"runTime": now() as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}
+	"runTime": (now() >> "PST") as DateTime {format: "yyyy-MM-dd HH:mm:ss.SSS"}
 }]]></ee:set-payload>
 			</ee:message>
 			<ee:variables >
@@ -120,21 +117,21 @@ var lemon = payload.retDT
 var latestOff = vars.offset as Number
 var fch = vars.fetch as Number
 ---
-("SELECT item.IMA_ItemID, item.IMA_SupercededItemID, item.IMA_ItemName, item.IMA_Classification, item.IMA_UnitMeasure, item.IMA_Price, item.IMA_PriceMatrixFlag, item.IMA_PriceCodeID, item.IMA_SalesTaxFlag, item.IMA_ItemTypeCode, item.IMA_CustItemID, item.IMA_RevLevel, item.IMA_OnHandQty, item.IMA_ProdFam, item.IMA_ProdModel, item.IMA_LeadTimeCode, item.IMA_PurLeadTime, item.IMA_MfgLeadTime, item.IMA_ItemStatusCode, item.IMA_SalesConvFactor, item.IMA_RoutHrsExcptFlag, item.IMA_GLSalesAcctNbr, item.IMA_CustomerID, item.IMA_OutplantLeadTime, item.IMA_LastModifiedDate, item.IMA_MinSalesQuantity, item.IMA_NonDiscountable, item.IMA_NonCommisionable, item.IMA_Length, item.IMA_LengthUnitMeasure, item.IMA_Width, item.IMA_WidthUnitMeasure, item.IMA_Height, item.IMA_HeightUnitMeasure, item.IMA_WeightUnitMeasure, ItemAttribute.Attribute1_Value, ItemAttribute.Attribute2_Value, ItemAttribute.Attribute3_Value, ItemAttribute.Attribute4_Value, ItemAttribute.Attribute5_Value, ItemAttribute.Attribute6_Value, ItemAttribute.Attribute7_Value, ItemAttribute.Attribute8_Value, ItemAttribute.Attribute9_Value, ItemAttribute.Attribute10_Value, ItemAttribute.Attribute11_Value, ItemAttribute.Attribute12_Value, ItemAttribute.Attribute13_Value, ItemAttribute.Attribute14_Value, ItemAttribute.Attribute15_Value, ItemAttribute.Attribute16_Value, ItemAttribute.Attribute17_Value, ItemAttribute.Attribute18_Value, ItemAttribute.Attribute19_Value, ItemAttribute.Attribute20_Value, ItemAttribute.Attribute21_Value, ItemAttribute.Attribute22_Value, ItemAttribute.Attribute23_Value, ItemAttribute.Attribute24_Value, ItemAttribute.Attribute25_Value, ItemAttribute.Attribute26_Value, ItemAttribute.Attribute27_Value, ItemAttribute.Attribute28_Value, ItemAttribute.Attribute29_Value, ItemAttribute.Attribute30_Value, IMS.IMS_LongDesc FROM Item INNER JOIN ItemAttribute ON Item.IMA_RecordID = ItemAttribute.ItemAttr_IMA_RecordID INNER JOIN IMS ON Item.IMA_RecordID = IMS.IMS_IMA_RecordId WHERE Item.IMA_ItemStatusCode = 'ACTIVE' AND (Item.IMA_ItemTypeCode LIKE 'FGS%' OR Item.IMA_ItemTypeCode = 'Finished Good') AND IMA_LastModifiedDate > '" ++ lemon ++ "' ORDER BY IMA_LastModifiedDate OFFSET " ++ latestOff ++ " ROWS FETCH NEXT " ++ fch ++" ROWS ONLY")]]></ee:set-variable>
+("SELECT item.IMA_ItemID, item.IMA_SupercededItemID, item.IMA_ItemName, item.IMA_Classification, item.IMA_UnitMeasure, item.IMA_Price, item.IMA_PriceMatrixFlag, item.IMA_PriceCodeID, item.IMA_SalesTaxFlag, item.IMA_ItemTypeCode, item.IMA_CustItemID, item.IMA_RevLevel, item.IMA_OnHandQty, item.IMA_ProdFam, item.IMA_ProdModel, item.IMA_LeadTimeCode, item.IMA_PurLeadTime, item.IMA_MfgLeadTime, item.IMA_ItemStatusCode, item.IMA_SalesConvFactor, item.IMA_RoutHrsExcptFlag, item.IMA_GLSalesAcctNbr, item.IMA_CustomerID, item.IMA_OutplantLeadTime, item.IMA_LastModifiedDate, item.IMA_MinSalesQuantity, item.IMA_NonDiscountable, item.IMA_NonCommisionable, item.IMA_Length, item.IMA_LengthUnitMeasure, item.IMA_Width, item.IMA_WidthUnitMeasure, item.IMA_Height, item.IMA_HeightUnitMeasure, item.IMA_WeightUnitMeasure, ItemAttribute.Attribute1_Value, ItemAttribute.Attribute2_Value, ItemAttribute.Attribute3_Value, ItemAttribute.Attribute4_Value, ItemAttribute.Attribute5_Value, ItemAttribute.Attribute6_Value, ItemAttribute.Attribute7_Value, ItemAttribute.Attribute8_Value, ItemAttribute.Attribute9_Value, ItemAttribute.Attribute10_Value, ItemAttribute.Attribute11_Value, ItemAttribute.Attribute12_Value, ItemAttribute.Attribute13_Value, ItemAttribute.Attribute14_Value, ItemAttribute.Attribute15_Value, ItemAttribute.Attribute16_Value, ItemAttribute.Attribute17_Value, ItemAttribute.Attribute18_Value, ItemAttribute.Attribute19_Value, ItemAttribute.Attribute20_Value, ItemAttribute.Attribute21_Value, ItemAttribute.Attribute22_Value, ItemAttribute.Attribute23_Value, ItemAttribute.Attribute24_Value, ItemAttribute.Attribute25_Value, ItemAttribute.Attribute26_Value, ItemAttribute.Attribute27_Value, ItemAttribute.Attribute28_Value, ItemAttribute.Attribute29_Value, ItemAttribute.Attribute30_Value, IMS.IMS_LongDesc, Item.IMA_UserDef4 FROM Item INNER JOIN ItemAttribute ON Item.IMA_RecordID = ItemAttribute.ItemAttr_IMA_RecordID INNER JOIN IMS ON Item.IMA_RecordID = IMS.IMS_IMA_RecordId WHERE Item.IMA_ItemStatusCode = 'ACTIVE' AND (Item.IMA_ItemTypeCode LIKE 'FGS%' OR Item.IMA_ItemTypeCode = 'Finished Good') AND IMA_LastModifiedDate > '" ++ lemon ++ "' ORDER BY IMA_LastModifiedDate OFFSET " ++ latestOff ++ " ROWS FETCH NEXT " ++ fch ++" ROWS ONLY")]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<db:select doc:name="Select: Lumicor DB" doc:id="acfeb5d0-9676-4e4a-ba79-c2598d579894" config-ref="Database_Config_lumicor_db">
-			<db:sql><![CDATA[#[vars.query]]]></db:sql>
-		</db:select>
-		<!-- [STUDIO:"Request: Lumicor sandbox DB"]<http:request method="GET" doc:name="Request: Lumicor sandbox DB" doc:id="860f1ed5-2d61-4ae5-a716-9a9d21f117d1" config-ref="HTTP_Request_configuration" path="/test" responseTimeout="180000">
+		<!-- [STUDIO:"Select: Lumicor DB"]<db:select doc:name="Select: Lumicor DB" doc:id="acfeb5d0-9676-4e4a-ba79-c2598d579894" config-ref="Database_Config_lumicor_db">
+			<db:sql><![CDATA[#[vars.query&#93;&#93;&#93;></db:sql>
+		</db:select> [STUDIO] -->
+		<http:request method="GET" doc:name="Request: Lumicor sandbox DB" doc:id="860f1ed5-2d61-4ae5-a716-9a9d21f117d1" config-ref="HTTP_Request_configuration" path="/test" responseTimeout="180000">
 			<http:headers ><![CDATA[#[output application/java
-&#45;&#45;-
+---
 {
     lastModifiedDate: now(),
 	query : vars.query,
 	database: "iERP90_SANDBOX"
-}&#93;&#93;&#93;></http:headers>
-		</http:request> [STUDIO] -->
+}]]]></http:headers>
+		</http:request>
 		<choice doc:name="Choice" doc:id="dbd69cac-b17e-47ac-b67b-e8a46e36980f" >
 			<when expression="#[!isEmpty(payload) and sizeOf(payload) == vars.fetch as Number]">
 				<set-variable value="#[1]" doc:name="route" doc:id="6cd627c3-41b7-4e02-be26-c9faf9bcb942" variableName="route" />
@@ -215,6 +212,7 @@ payload map {
     "Height_Length__c": $.IMA_Height,
     "Height_Length_Unit_of_Measure__c": $.IMA_HeightUnitMeasure,
     "Weight_Unit_of_Measure__c": $.IMA_WeightUnitMeasure,
+    "UserDef__c": $.IMA_UserDef4,
     //Attributes
     "Decor__c": $.Attribute1_Value,
     // "": $.Attribute2_Value,
@@ -330,6 +328,7 @@ payload map {
     "Height_Length__c": $.IMA_Height,
     "Height_Length_Unit_of_Measure__c": $.IMA_HeightUnitMeasure,
     "Weight_Unit_of_Measure__c": $.IMA_WeightUnitMeasure,
+    "UserDef__c": $.IMA_UserDef4,
     //Attributes
     "Decor__c": $.Attribute1_Value,
     // "": $.Attribute2_Value,
@@ -404,7 +403,7 @@ payload map {
 						<logger level="INFO" doc:name="logging upsert result" doc:id="f3a21adb-2896-4de3-aa7b-d01c52e3c243" message="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.upsertRes]"/>
 					</batch:aggregator>
 				</batch:step>
-				<batch:step name="Batch_Step-sch1" doc:id="b5dc64e2-61f4-49ad-ab2a-438fb2db81c3" >
+				<batch:step name="Batch_Step-sch1" doc:id="b5dc64e2-61f4-49ad-ab2a-438fb2db81c3" acceptPolicy="ONLY_FAILURES">
 					<logger level="INFO" doc:name="Logger: payload" doc:id="bab5478e-2eb2-4e10-915f-7bfc2b6bf218" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": payload&#10;}]'/>
 				</batch:step>
 			</batch:process-records>
@@ -432,14 +431,16 @@ output application/json
 			<batch:process-records >
 				<batch:step name="bp2-batch-step1" doc:id="7d78a31b-91fa-4715-9c75-4fc0b825a12c" >
 					<batch:aggregator doc:name="Batch Aggregator" doc:id="e874e979-c6f8-445c-94f1-0f91a1c45f44" size="200" preserveMimeTypes="true">
-						<!-- [STUDIO:"sample db"]<salesforce:upsert objectType="sampleInfo__c" externalIdFieldName="roll_number__c" doc:name="sample db" doc:id="0f8ac29c-e42a-4ad4-968a-5fbd04ad2c16" config-ref="Salesforce_Config" target="upsertRes" /> [STUDIO] -->
+						<!-- [STUDIO:"sample db"]<salesforce:upsert objectType="sampleInfo__c" externalIdFieldName="roll_number__c" doc:name="sample db" doc:id="0f8ac29c-e42a-4ad4-968a-5fbd04ad2c16" config-ref="Salesforce_Config">
+							<salesforce:records ><![CDATA[#[vars.productUpsertBody&#93;&#93;&#93;></salesforce:records>
+						</salesforce:upsert> [STUDIO] -->
 						<!-- [STUDIO:"LumicorDB"]<salesforce:upsert doc:name="LumicorDB" doc:id="32aceabc-8f0b-453f-aaa6-20c7e73869f0" config-ref="Salesforce_Config" objectType="ProductPlayground__c" externalIdFieldName="item_id__c"/> [STUDIO] -->
-						<salesforce:upsert objectType="Product2" externalIdFieldName="ItemID__c" doc:name="lumicorDB to Product" doc:id="6ba3c1d6-c453-4cc0-9897-6bac27db6300" config-ref="Salesforce_Config" />
+						<salesforce:upsert objectType="Product2" externalIdFieldName="ItemID__c" doc:name="lumicorDB to Product" doc:id="6ba3c1d6-c453-4cc0-9897-6bac27db6300" config-ref="Salesforce_Config" target="upsertRes"/>
 						<logger level="INFO" doc:name="logging upsert result" doc:id="d58a4429-8a9e-416f-bb38-a66e402bb1b9" message="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.upsertRes]" />
 					</batch:aggregator>
 				</batch:step>
-				<batch:step name="Batch_Step2" doc:id="a0f61101-a33a-46e1-8a6b-f2ce954db698" >
-					<logger level="INFO" doc:name="Logger: payload" doc:id="c7f56a2f-9dcc-4e6a-8320-3aaad013643e" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": payload&#10;}]'/>
+				<batch:step name="Batch_Step" doc:id="54435612-d33a-416c-a8ef-b8b441b37eb4" >
+					<logger level="INFO" doc:name="Logger: Printing error records" doc:id="7df7314b-6b8a-4931-ab4f-49a2e9094362" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": payload&#10;}]'/>
 				</batch:step>
 			</batch:process-records>
 			<batch:on-complete >
@@ -452,66 +453,5 @@ output application/json
 			</batch:on-complete>
 		</batch:job>
 	</flow>
-	<!-- [STUDIO:"product-sync-2"]<flow name="product-sync-2" doc:id="182a5754-8866-4ea4-8316-17a1a9f5677f">
-		<logger level="INFO" doc:name="Start" doc:id="8d3fe1c3-19cf-4d74-9ac4-cc9e6643e24d" message='#["Start of the flow"&#93;' />
-		<set-variable value='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;now() as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}&#93;' doc:name="var: runTime" doc:id="fff9eff6-554c-4358-a900-7079710e897e" variableName="runTime" />
-		<os:retrieve doc:id="b47f412b-3b0b-40f5-bfea-8a1709936773" key='#["DateTimeTempStorage"&#93;' objectStore="Object_store" doc:name="Retrieve: DateTimeTempStorage" target="retDT">
-			<os:default-value><![CDATA[#[%dw 2.0
-output application/json
-&#45;&#45;-
-(now() - |PT1H|) as DateTime {format: "yyyy-MM-dd kk:mm:ss.SSS"}&#93;&#93;&#93;></os:default-value>
-		</os:retrieve>
-		<http:request method="GET" doc:name="Request" doc:id="75cb77b9-342f-4c77-bb47-5259150e853b" config-ref="HTTP_Request_configuration" path="/test" />
-		<db:select doc:name="Select" doc:id="8baca470-15e2-4578-8cee-4fbae84c6ddd" config-ref="Database_Config">
-			<db:sql><![CDATA[select * from sampleInfo1 where lastModified > :lemon&#93;&#93;></db:sql>
-			<db:input-parameters><![CDATA[#[{
-	lemon: vars.retDT
-}&#93;&#93;&#93;></db:input-parameters>
-		</db:select>
-		<logger level="INFO" doc:name="Logger" doc:id="72b1426c-1388-4a51-a18c-2da7c36d69d4" message='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;{&#10;	"updatedOrChangedData": payload&#10;}&#93;' />
-		<ee:transform doc:name="Transform Message" doc:id="fafe33f8-6240-4b6e-a147-a07bb6d5065a">
-			<ee:message>
-				<ee:set-payload><![CDATA[%dw 2.0
-output application/java
-&#45;&#45;-
-payload map {
-	serial_number__c: $.id,
-	student_name__c: $.name,
-	email__c: $.email,
-	roll_number__c: $.rollno,
-	lastModified__c: $.lastModified
-}&#93;&#93;></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-		<batch:job jobName="product-sync-pocBatch_Job" doc:id="35963035-eddb-4829-b8a5-5428b0e87bef" maxFailedRecords="-1"> <batch:process-records> <batch:step name="Batch_Step" doc:id="5c391a57-822a-46f3-b6e2-952ae87dd5f9"> <salesforce:upsert doc:name="Upsert" doc:id="fa24d578-a435-4be6-8eea-f7206dd33550" config-ref="Salesforce_Config" objectType="sampleInfo__c" externalIdFieldName="roll_number__c">
-		</salesforce:upsert>
-					<logger level="INFO" doc:name="Logger" doc:id="739df674-8b41-47f3-a9d6-36e2c5afc4e7" message="#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;payload&#93;" />
-					<validation:is-false doc:name="Is false" doc:id="4c302628-096f-4786-8f1a-b4567383ff02" expression="#[payload.successful == false&#93;" message='#["Failed while 
-			upserting a record"&#93;' /> </batch:step> <batch:step name="Batch_Step1" doc:id="778db9ce-e362-4ecb-a00d-0cd826f3c1e5" acceptPolicy="ONLY_FAILURES"> 
-			<logger level="INFO" doc:name="Logger" doc:id="0fa55a1c-6ab1-4125-b469-1bfec1b7339b" message="#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;payload&#93;" /> 
-			</batch:step> </batch:process-records>
-			<batch:on-complete>
-				<logger level="INFO" doc:name="Logger" doc:id="60f2f19d-fb70-48d9-98e0-e23da2d9d8dc" message='#["The data has been upserted"&#93;' />
-				<os:store doc:name="Store" doc:id="5a1fd105-f36e-4612-bd49-e490e8fc84d4" key='#["DateTimeTempStorage"&#93;' objectStore="Object_store">
-			<os:value><![CDATA[#[vars.runTime&#93;&#93;&#93;></os:value>
-		</os:store>
-				<os:retrieve doc:name="Retrieve" doc:id="c6c80a11-5d28-4e64-ae51-04cd04314e1a" key='#["DateTimeTempStorage"&#93;' objectStore="Object_store">
-			<os:default-value><![CDATA[#["The value is not saved properly"&#93;&#93;&#93;></os:default-value>
-		</os:retrieve>
-				<logger level="INFO" doc:name="Logger" doc:id="d1990d45-de73-41ab-b72f-e9ee5f629421" message='#["Fetched value from object store is " ++ payload as String&#93;' />
-				<logger level="INFO" doc:name="End of flow" doc:id="aebbf074-8768-4ac4-8954-6c05161fce59" message='#["After batch job"&#93;' />
-			</batch:on-complete> 
-</batch:job>
-		<ee:transform doc:name="Transform Message" doc:id="06dc8128-5ee5-4a5b-a2fb-2e2c72148075">
-			<ee:message>
-				<ee:set-payload><![CDATA[%dw 2.0
-output application/java
-&#45;&#45;-
-{
-}&#93;&#93;></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-	
-</flow> [STUDIO] -->
 
 </mule>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<flow name="batch-job-partial-page-flow"
+		doc:id="5c5e1278-b34c-486d-b6ac-37303f2aa50d">
+		<batch:job jobName="batch-job-for-partial-page"
+			doc:id="158da6d6-a858-428f-9f8a-444edd1e4aeb" maxFailedRecords="-1"
+			blockSize="200">
+			<batch:process-records>
+				<batch:step name="batch-step-1-partial-page"
+					doc:id="0148e553-5f57-4528-9523-63947100f392">
+					<batch:aggregator doc:name="Batch Aggregator"
+						doc:id="d3c14d81-cc96-4cc1-845a-a641dd1f244d" size="200"
+						preserveMimeTypes="true">
+						<salesforce:upsert objectType="Product2"
+							externalIdFieldName="ItemID__c" doc:name="lumicorDB to Product"
+							doc:id="d82a2b09-a7ff-4f7c-9937-eb6b94efbf9a"
+							config-ref="Salesforce_Config" />
+					
+</batch:aggregator>
+				</batch:step>
+				<batch:step name="batch-step-2-partial-page"
+					doc:id="65729298-b69b-4c95-ab53-01b77e4cbb90">
+					<logger level="INFO" doc:name="Logger: payload"
+						doc:id="f2895e0d-c3f0-4015-bed0-0481af5ea298"
+						message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": payload&#10;}]' />
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete>
+				<os:clear doc:name="Clear: offset"
+					doc:id="f67214a2-e2c0-4dd1-8424-d1364d9604ce"
+					objectStore="Object_store_pagination" />
+				<os:retrieve doc:name="Retrieve offset"
+					doc:id="5b21233f-8e65-4fcf-841c-8f117c3c018f" key='#["offset"]'
+					objectStore="Object_store_pagination">
+					<os:default-value><![CDATA[#["The offset object store has been cleared"]]]></os:default-value>
+				</os:retrieve>
+				<logger level="INFO" doc:name="offset value"
+					doc:id="a15f8ab4-a538-495f-adda-9cdf28494d54"
+					message='#["Offset retrieved is : " ++ payload as String]' />
+				<logger level="INFO" doc:name="Records synced successfully"
+					doc:id="d66e09f1-e5bc-40b3-a0a0-0d8336dbbcfe"
+					message='#["All records synced successfully"]' />
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+</mule>
