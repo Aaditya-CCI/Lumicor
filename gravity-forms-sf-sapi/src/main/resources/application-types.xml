@@ -636,4 +636,5 @@ type auto_15ff9e61_d418_4886_9856_1b3b7b5c39ae_Output_Variables_quoteNumber = St
       </types:output-event>
     </types:processor-declaration>
   </types:enrichment>
+  <types:enrichment select="#8f3ea632-0bfa-43b3-842e-8ded7f73ef04"/>
 </types:mule>
