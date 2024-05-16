@@ -175,37 +175,60 @@ output application/json
 				<foreach doc:name="For Each for Decor "
 					doc:id="150b240f-f41b-4c1f-b437-f18b8526630b"
 					collection="#[payload.decor]">
-					<set-variable
-						value='#[([payload."Décor"] ++ [payload.Gauge] ++ [payload."Resin Type"] ++ [payload."Panel Size"]) joinBy  ", "]'
-						doc:name="productName"
-						doc:id="1107f7ef-730a-4a29-afe8-3285dc509a5b"
-						variableName="productName" />
-					<salesforce:query doc:name="Query"
-						doc:id="d31e60e1-2769-44e5-9af3-de6cc4ccd6c2"
-						config-ref="Salesforce_Config" target="productId"
-						targetValue="#[payload[0].Id]">
-						<salesforce:salesforce-query><![CDATA[select Name, Id from Product2 where Decor__c = ':decor' and Decor_Gauge__c =':gauge' and Decor_Panel_Size__c like ':panelSize' and Decor_Resin_Back_Finish__c =':backFinish' and Decor_Resin_Front_Finish__c =':frontFinish' and Decor_ResinType__c =':resinType' and Chemshield__c =:chemshield and Illume__c =:illume and Luminous__c =:luminous and Marker_Board__c =:markerboard and Opaque__c =:opaque and Reflective_Finishes__c =:reflectiveFinishes]]></salesforce:salesforce-query>
-						<salesforce:parameters><![CDATA[#[{
-	decor: payload."Décor",
-	gauge: payload.Gauge,
-	panelSize: "%" ++ payload."Panel Size" ++ "%",
-	backFinish: payload."Resin Back Finish",
-	frontFinish: payload."Resin Front Finish",
-	resinType: payload."Resin Type",
-	chemshield: if (payload.AddOns contains "ChemShield") true else false,
-    illume:  if(payload.AddOns contains "Illume") true else false,
-    luminous:   if(payload.AddOns contains  "Luminous") true else false,
-    markerboard:   if(payload.AddOns contains "Marker Board") true else false,
-    opaque:  if(payload.AddOns contains "Opaque") true else false,
-    reflectiveFinishes:  if(payload.AddOns contains "Reflective Finishes") true else false
-}]]]></salesforce:parameters>
+					<ee:transform doc:name="var: allAddons" doc:id="8f3ea632-0bfa-43b3-842e-8ded7f73ef04" >
+						<ee:message >
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="allAddons" ><![CDATA[%dw 2.0
+output application/json
+
+var addOns = payload.AddOns splitBy  ", "
+
+var frontAddons = addOns reduce ((item, fr_Add_ons = []) -> if(["ChemShield", "Marker Board"] contains item) (fr_Add_ons ++ [item]) else (fr_Add_ons) )
+
+var backAddons = addOns reduce ((item, back_Add_ons = []) -> if(["Luminous", "Opaque", "Reflective Finishes", "Illume"] contains item) (back_Add_ons ++ valuesOf(payload filterObject (($$) as String contains item))
+) else (back_Add_ons) )
+---
+{
+    "front_addons": frontAddons,
+    "back_addons": if(addOns contains "Illume")(backAddons + "Illume") else(backAddons)
+}]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+					<ee:transform doc:name="var: productName" doc:id="60786533-178d-4bda-a63f-e2627afcd167" >
+						<ee:message >
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="productName" ><![CDATA[%dw 2.0
+output application/java
+---
+"productName = " ++ (([payload."Décor"] ++ [payload.Gauge] ++ [payload."Resin Type"] ++ [payload."Panel Size"]) joinBy  ", ") ++ "\n" ++ "vars.allAddons = " ++ (vars.allAddons.front_vars.allAddons ++ vars.allAddons.back_vars.allAddons joinBy  ",")]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+					<choice doc:name="Choice" doc:id="a5ec85ca-4fff-45ce-a709-e31a99caebf7" >
+						<when expression='#[sizeOf(vars.allAddons."back_addons") &lt;= 3]'>
+							<ee:transform doc:name="Query Build" doc:id="ac32d7e2-0fdb-4bea-b651-26fd20ad2146">
+								<ee:message>
+								</ee:message>
+								<ee:variables >
+									<ee:set-variable variableName="productQuery" ><![CDATA[%dw 2.0
+output application/java
+var finalAddons = {
+    "FA": if(sizeOf(vars.allAddons.front_addons) < 3)(vars.allAddons.front_addons ++ (1 to (3 - sizeOf(vars.allAddons.front_addons)) map (''))) else vars.allAddons.front_addons,
+    "BA": if(sizeOf(vars.allAddons.back_addons) < 3)(vars.allAddons.back_addons ++ (1 to (3 - sizeOf(vars.allAddons.back_addons)) map (''))) else vars.allAddons.back_addons
+}
+---
+"select Name, Id from Product2 where (Decor__c = '" ++ payload."Décor" ++ "' and Decor_Gauge__c = '" ++ payload.Gauge ++ "' and Decor_Panel_Size__c like '%" ++ payload."Panel Size" ++ "%' and Decor_Resin_Back_Finish__c = '" ++ payload."Resin Back Finish" ++ "' and Decor_Resin_Front_Finish__c = '" ++ payload."Resin Front Finish" ++ "' and Decor_ResinType__c = '" ++ payload."Resin Type" ++ "') and (" ++ "(" ++ (permute(finalAddons.FA)  map("(Front_Add_on_1__c = '" ++ $[0] ++ "' AND Front_Add_on_2__c = '" ++ $[1] ++ "' AND Front_Add_on_3__c = '" ++ $[2] ++ "')") joinBy " OR ") ++ ")" ++ " AND " ++
+"(" ++ (permute(finalAddons.BA)  map("(Back_Add_on_1__c = '" ++ $[0] ++ "' AND Back_Add_on_2__c = '" ++ $[1] ++ "' AND Back_Add_on_3__c = '" ++ $[2] ++ "')") joinBy " OR ") ++ "))" ]]></ee:set-variable>
+								</ee:variables>
+							</ee:transform>
+							<salesforce:query doc:name="Query" doc:id="d31e60e1-2769-44e5-9af3-de6cc4ccd6c2" config-ref="Salesforce_Config" target="productId" targetValue="#[payload[0].Id]">
+						<salesforce:salesforce-query><![CDATA[#[vars.productQuery]]]></salesforce:salesforce-query>
 					</salesforce:query>
-					<choice doc:name="Choice"
-						doc:id="4a43a9b3-8960-4cf8-8a8a-ac55e616d502">
+							<choice doc:name="Choice" doc:id="4a43a9b3-8960-4cf8-8a8a-ac55e616d502">
 						<when expression="#[vars.productId != null]">
-							<logger level="INFO" doc:name="creating-quote-line-for-found-product" doc:id="c27ebe11-e5c7-419f-a1fe-9d93ff39738e" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Creating quote line for product",&#10;	product: payload&#10;}]'/>
-							<ee:transform doc:name="payload --&gt; QuoteLine"
-								doc:id="918a2069-0cf6-4142-bb67-d60f8975e111">
+							<logger level="INFO" doc:name="creating-quote-line-for-found-product" doc:id="c27ebe11-e5c7-419f-a1fe-9d93ff39738e" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Creating quote line for product",&#10;	product: payload&#10;}]' />
+							<ee:transform doc:name="payload --&gt; QuoteLine" doc:id="918a2069-0cf6-4142-bb67-d60f8975e111">
 								<ee:message>
 									<ee:set-payload><![CDATA[%dw 2.0
 output application/java
@@ -219,13 +242,12 @@ output application/java
 								<ee:variables>
 								</ee:variables>
 							</ee:transform>
-							<until-successful maxRetries="5" doc:name="Until Successful" doc:id="212a68cb-7637-4cda-9cbb-c453aa57baef" >
+							<until-successful maxRetries="5" doc:name="Until Successful" doc:id="212a68cb-7637-4cda-9cbb-c453aa57baef">
 								<salesforce:create doc:name="Create" doc:id="6d60ec16-578c-4985-afee-b59fed89a5ad" config-ref="Salesforce_Config" type="SBQQ__QuoteLine__c" target="createRes">
 							</salesforce:create>
-								<validation:is-false doc:name="Is false" doc:id="1d4faabb-8d30-4f02-86d8-4a9552ab1b12" expression="#[vars.createRes.successful == false]" message='#["Failed while entering record in quote line"]'/>
+								<validation:is-false doc:name="Is false" doc:id="1d4faabb-8d30-4f02-86d8-4a9552ab1b12" expression="#[vars.createRes.successful == false]" message='#["Failed while entering record in quote line"]' />
 							</until-successful>
-							<ee:transform doc:name="RecordUpdation"
-								doc:id="07ef9286-ae14-4888-9454-cae7388d298f">
+							<ee:transform doc:name="RecordUpdation" doc:id="07ef9286-ae14-4888-9454-cae7388d298f">
 								<ee:message>
 								</ee:message>
 								<ee:variables>
@@ -241,24 +263,64 @@ output application/json
 						
 </when>
 						<otherwise>
+							<logger level="INFO" doc:name="creating-dummy-sku-quote-line" doc:id="8097a5fb-8409-43f1-a5fd-20e6121e89c2" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;    message: "Decor Product not found",&#10;    product: payload&#10;}]' />
+							<salesforce:query doc:name="Fetch Id of DummySKU" doc:id="665f6a6b-1c57-4e75-b1bb-42b22fe3e592" config-ref="Salesforce_Config" target="dummyProductId" targetValue="#[payload[0].Id]">
+								<salesforce:salesforce-query><![CDATA[select Name, id from Product2 where Name = 'Dummy SKU'
+]]></salesforce:salesforce-query>
+							</salesforce:query>
+							<validation:is-false doc:name="Is false" doc:id="9cf57e84-8e35-4ba3-83cd-72dd2803e8d4" expression="#[vars.dummyProductId == null]" message='#["Dummy Product not found in Salesforce"]' />
+							<ee:transform doc:name="payload for non existing product" doc:id="2cee33e9-ba9f-4a30-abe9-ac0bf06cb677">
+								<ee:message>
+									<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	SBQQ__Product__c: vars.dummyProductId,
+	SBQQ__Quote__c: vars.quoteId,
+	Product_Detail__c: vars.productName,
+	Case_Quantity__c: payload."Panel Quantity"
+}]]]></ee:set-payload>
+								</ee:message>
+							</ee:transform>
+							<until-successful maxRetries="5" doc:name="Until Successful" doc:id="c5dafe7e-441b-4bb4-bf2b-dad5e9a330f9">
+								<salesforce:create doc:name="Create" doc:id="a8391500-7827-4e56-b4f7-8f2fdabc2139" config-ref="Salesforce_Config" type="SBQQ__QuoteLine__c" />
+								<validation:is-false doc:name="Is false" doc:id="de8f420b-1d1e-456e-b5ac-b23081d6f759" expression="#[payload.successful == false]" message='#["Failed while entering record in quote line"]' />
+							</until-successful>
+							<ee:transform doc:name="RecordUpdation" doc:id="31de4edf-339b-4c8b-9112-75fc879fa5b2">
+								<ee:message>
+								</ee:message>
+								<ee:variables>
+									<ee:set-variable variableName="decorRecords"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"success": vars.decorRecords.success ++ [],
+	"failure": vars.decorRecords.failure ++ [vars.productName]
+}]]></ee:set-variable>
+								</ee:variables>
+							</ee:transform>
+						</otherwise>
+					</choice>
+						</when>
+						<otherwise>
 							<logger level="INFO" doc:name="creating-dummy-sku-quote-line"
-								doc:id="8097a5fb-8409-43f1-a5fd-20e6121e89c2"
+								doc:id="88aac1dd-5a80-4263-857b-04a2297bcdb0"
 								message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;    message: "Decor Product not found",&#10;    product: payload&#10;}]' />
 							<salesforce:query
 								doc:name="Fetch Id of DummySKU"
-								doc:id="665f6a6b-1c57-4e75-b1bb-42b22fe3e592"
+								doc:id="da9df7b4-b804-451c-b8c2-7f72fcdc5517"
 								config-ref="Salesforce_Config" target="dummyProductId"
 								targetValue="#[payload[0].Id]">
 								<salesforce:salesforce-query><![CDATA[select Name, id from Product2 where Name = 'Dummy SKU'
 ]]></salesforce:salesforce-query>
 							</salesforce:query>
 							<validation:is-false doc:name="Is false"
-								doc:id="9cf57e84-8e35-4ba3-83cd-72dd2803e8d4"
+								doc:id="5fcdfad4-1d52-4c29-b658-d2d416d02b50"
 								expression="#[vars.dummyProductId == null]"
 								message='#["Dummy Product not found in Salesforce"]' />
 							<ee:transform
 								doc:name="payload for non existing product"
-								doc:id="2cee33e9-ba9f-4a30-abe9-ac0bf06cb677">
+								doc:id="73a1388f-2531-43b6-a7af-7ef122c5a3ca">
 								<ee:message>
 									<ee:set-payload><![CDATA[%dw 2.0
 output application/java
@@ -273,17 +335,17 @@ output application/java
 							</ee:transform>
 							<until-successful maxRetries="5"
 								doc:name="Until Successful"
-								doc:id="c5dafe7e-441b-4bb4-bf2b-dad5e9a330f9">
+								doc:id="21a64b63-0d1e-4e57-953c-3d2f6e9e93f3">
 								<salesforce:create doc:name="Create"
-									doc:id="a8391500-7827-4e56-b4f7-8f2fdabc2139"
+									doc:id="b4bdc04b-3215-4958-b6fa-10d9fe0b3b4b"
 									config-ref="Salesforce_Config" type="SBQQ__QuoteLine__c" />
 								<validation:is-false doc:name="Is false"
-									doc:id="de8f420b-1d1e-456e-b5ac-b23081d6f759"
+									doc:id="3b138a10-75aa-496e-a94a-40cdd5f08d46"
 									expression="#[payload.successful == false]"
 									message='#["Failed while entering record in quote line"]' />
 							</until-successful>
 							<ee:transform doc:name="RecordUpdation"
-								doc:id="31de4edf-339b-4c8b-9112-75fc879fa5b2">
+								doc:id="980af307-3a26-4f0b-b287-7e3140bd9f81">
 								<ee:message>
 								</ee:message>
 								<ee:variables>

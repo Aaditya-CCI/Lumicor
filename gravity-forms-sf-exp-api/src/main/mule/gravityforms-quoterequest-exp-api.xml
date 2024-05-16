@@ -3,7 +3,7 @@
     <http:listener-config name="gravityforms-quoterequest-exp-api-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="8081" />
     </http:listener-config>
-    <apikit:config name="gravityforms-quoterequest-exp-api-config" api="resource::7d94ceec-ed67-483d-81fa-7869180490d2:gravityforms-quoterequest-exp-api:1.0.7:raml:zip:gravityforms-quoterequest-exp-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <apikit:config name="gravityforms-quoterequest-exp-api-config" api="resource::7d94ceec-ed67-483d-81fa-7869180490d2:gravityforms-quoterequest-exp-api:1.0.7:raml:zip:gravityforms-quoterequest-exp-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" disableValidations="true"/>
     <flow name="gravityforms-quoterequest-exp-api-main">
         <http:listener config-ref="gravityforms-quoterequest-exp-api-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
