@@ -210,8 +210,8 @@ output application/java
 							<ee:transform doc:name="Query Build" doc:id="ac32d7e2-0fdb-4bea-b651-26fd20ad2146">
 								<ee:message>
 								</ee:message>
-								<ee:variables >
-									<ee:set-variable variableName="productQuery" ><![CDATA[%dw 2.0
+								<ee:variables>
+									<ee:set-variable variableName="productQuery"><![CDATA[%dw 2.0
 output application/java
 
 fun permute(arr) =
