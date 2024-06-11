@@ -285,5 +285,6 @@ output application/json
 			
 </otherwise>
 		</choice> [STUDIO] -->
+		<error-handler ref="z-common-error-handler-flow" />
 	</flow>
 </mule>

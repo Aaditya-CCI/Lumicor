@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<error-handler name="z-common-error-handler-flow" doc:id="dc8c5da3-5f63-4358-861f-e6e01b58d946" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="aaf97b5b-4603-433b-a79b-7b7b435a3e41" type="SALESFORCE:CONNECTIVITY, SALESFORCE:INVALID_INPUT, SALESFORCE:MUTUAL_AUTHENTICATION_FAILED, SALESFORCE-COMPOSITE:CONNECTIVITY, SALESFORCE-COMPOSITE:INVALID_SESSION, SALESFORCE-COMPOSITE:VALIDATION">
+			<ee:transform doc:name="Transform Message" doc:id="c05c9703-f30b-4ee9-a5be-e8ac8862b3b2" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"statusCode": 500,
+	"message": "salesforce error",
+	"description": error.description
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="2f7cc665-99c1-481f-9c83-80daceab8f59" type="VALIDATION:INVALID_BOOLEAN">
+			<ee:transform doc:name="Transform Message" doc:id="8270637f-5e45-4610-b2d9-87b030e78a97" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"statusCode": 400,
+	"message": "Integration error",
+	"description": error.description
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+	</error-handler>
+</mule>

@@ -131,8 +131,10 @@ output application/json
     </flow>
     <flow name="get:\health-check:gravityforms-sfdc-sys-api-config">
         <flow-ref doc:name="Flow Reference" doc:id="932a0981-ff27-4069-9c83-5504304aa337" name="health-checkFlow"/>
+		<error-handler ref="z-common-error-handler-flow" />
     </flow>
     <flow name="post:\generate-quote:application\json:gravityforms-sfdc-sys-api-config">
         <flow-ref doc:name="Flow Reference" doc:id="037eb54f-099c-458a-8dc2-a5e9ded3babc" name="generate-quoteFlow"/>
+		<error-handler ref="z-common-error-handler-flow" />
     </flow>
 </mule>

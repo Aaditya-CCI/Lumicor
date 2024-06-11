@@ -1,2 +1,8 @@
+#Instance Id for dev environment
+api:
+  id: ""
+  
+# salesforce username for dev environment 
 salesforceComposite:
   username: "aaditya.duggal@lumicor.dev1"
+  link: "https://test.salesforce.com/services/oauth2/token"
