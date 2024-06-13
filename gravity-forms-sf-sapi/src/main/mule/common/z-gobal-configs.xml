@@ -27,5 +27,6 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
 	</salesforce:sfdc-config>
 	<!--  <api-gateway:autodiscovery apiId="19408279" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="116a88db-abaf-4876-9109-483a55547ed3" flowRef="gravityforms-sfdc-sys-api-main" />-->
 	<configuration-properties doc:name="Configuration properties" doc:id="cf6412b0-d523-44d4-9025-c6766d1aeb0e" file="properties\common-config.yaml" />
+	<api-gateway:autodiscovery apiId="19599701" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="60dfccdd-8bca-42ac-8fc7-f5757329ee40" flowRef="gravityforms-sfdc-sys-api-main" />
 	
 </mule>

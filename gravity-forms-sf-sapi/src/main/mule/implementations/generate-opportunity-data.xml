@@ -7,7 +7,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
 	<flow name="generate-opportunity-dataFlow" doc:id="15ff9e61-d418-4886-9856-1b3b7b5c39ae" >
 		<logger level="INFO" doc:name="constructing-opportunity-payload" doc:id="f2cee29f-1f13-4320-a2a8-712e93750e63" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Building opportunity payload"&#10;}]'/>
-		<logger level="INFO" doc:name="checking-architect-account" doc:id="fd92ab2b-7992-4b58-a1eb-adea8614e501" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "checking for specifier account(using architect company name and shippingcity)"&#10;}]'/>
+		<logger level="INFO" doc:name="checking-architect-account" doc:id="fd92ab2b-7992-4b58-a1eb-adea8614e501" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "checking for specifier account(using architect company name and architect zipcode)"&#10;}]'/>
 		<salesforce:query doc:name="Lookup-account-for-opp" doc:id="a90e2fcc-ff2d-45a4-b730-a5952e306039" config-ref="Salesforce_Config" target="ArchCompany" targetValue="#[payload[0].Id]">
 							<salesforce:salesforce-query><![CDATA[select Id from Account where Name = ':architectCompany' and BillingPostalCode = ':architectZip']]></salesforce:salesforce-query>
 			<salesforce:parameters><![CDATA[#[{
