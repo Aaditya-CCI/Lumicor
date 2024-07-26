@@ -82,9 +82,9 @@ else
 ("select * from sampleInfo1 where lastModified > '" ++ date1 ++ "' order by lastModified offset " ++ latestOff ++ " rows fetch next " ++ fch ++ " rows only")&#93;&#93;></ee:set-variable>
 			</ee:variables>
 		</ee:transform> [STUDIO] -->
-		<!-- [STUDIO:"Select: sample DB"]<db:select doc:name="Select: sample DB" doc:id="86f6fe18-ada1-4edb-b211-ff96acea5437" config-ref="Database_Config">
-			<db:sql ><![CDATA[#[vars.query&#93;&#93;&#93;></db:sql>
-		</db:select> [STUDIO] -->
+		<db:select doc:name="Select: sample DB" doc:id="86f6fe18-ada1-4edb-b211-ff96acea5437" config-ref="Database_Config">
+			<db:sql ><![CDATA[#[vars.query]]]></db:sql>
+		</db:select>
 		<ee:transform doc:name="Query Formation: Lumicor sandbox" doc:id="d53f7f6f-3e5e-4a46-be88-0edb6b334720">
 			<ee:message>
 			</ee:message>

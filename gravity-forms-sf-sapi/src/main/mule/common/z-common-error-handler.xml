@@ -25,10 +25,11 @@ output application/json
 					<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
-{
-	"statusCode": 400,
-	"message": "Integration error",
-	"description": error.description
+vars.compQueryRes.compositeResponse map {
+    "Object": $.referenceId replace "ref" with "",
+    "errorMessage": $[0].message[0], 
+    "errorCode": $[0].errorCode[0],
+    "statusCode": $.httpStatusCode
 }]]></ee:set-payload>
 				</ee:message>
 			</ee:transform>

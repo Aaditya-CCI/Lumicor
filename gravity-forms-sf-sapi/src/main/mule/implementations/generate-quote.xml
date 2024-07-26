@@ -12,29 +12,508 @@ http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mu
 		<ee:transform doc:name="payload var: quoteNumber" doc:id="a425d1f6-93bd-4061-a3f0-7a75126a36e4" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::util::Values
 output application/json
+var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else false
 ---
-payload]]></ee:set-payload>
+if(!isBIentered)
+(payload update field("billing_info_company_name") with payload.shipping_info_company_name 
+update field("billing_info_contact_name") with payload.shipping_info_contact_name 
+update field("billing_info_contact_email") with payload.shipping_info_contact_email 
+update field("billing_info_contact_phone") with payload.shipping_info_contact_phone 
+update field("billing_info_contact_fax") with payload.shipping_info_contact_fax
+update field("billing_address_full") with payload.shipping_address_full
+update field("billing_address_street_address") with payload.shipping_address_street_address
+update field("billing_address_line2") with payload.shipping_address_line2
+update field("billing_address_city") with payload.shipping_address_city
+update field("billing_address_state") with payload.shipping_address_state
+update field("billing_address_zip") with payload.shipping_address_zip
+update field("billing_address_country") with payload.shipping_address_country)
+else (payload)]]></ee:set-payload>
 			</ee:message>
 			<ee:variables >
-				<ee:set-variable variableName="quoteNumber" ><![CDATA[%dw 2.0
-output application/json
----
-payload.quote_number]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<choice doc:name="Choice" doc:id="b6e249ed-ef81-4ba3-92e9-2cd776137b22" >
-			<when expression='#[payload.quote_number != ""]'>
-			<logger level="INFO" doc:name="existing-quote-number" doc:id="7b65c0e2-a1ba-4bd3-94cb-97f004434407" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Adding quote to existing opportunity as fetched by given quote number"&#10;}]'/>
-				<ee:transform doc:name="var: quote" doc:id="546d171e-4fa7-4bde-8ca4-849f91c12b4f">
-					<ee:message>
+		<ee:transform doc:name="stateCodeSettings" doc:id="6154ec37-a177-4331-9a89-2637795d9e66" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::util::Values
+output application/json
+
+fun getStateCode(inputState: String) = 
+    if(lower(inputState) == lower("Alabama")) "AL" 
+    else if(lower(inputState) == lower("Alaska")) "AK"
+    else if(lower(inputState) == lower("Arizona")) "AZ"
+    else if(lower(inputState) == lower("Arkansas")) "AR"
+    else if(lower(inputState) == lower("California")) "CA"
+    else if(lower(inputState) == lower("Colorado")) "CO" 
+    else if(lower(inputState) == lower("Connecticut")) "CT" 
+    else if(lower(inputState) == lower("Delaware")) "DE" 
+    else if(lower(inputState) == lower("Florida")) "FL" 
+    else if(lower(inputState) == lower("Georgia")) "GA" 
+    else if(lower(inputState) == lower("Hawaii")) "HI" 
+    else if(lower(inputState) == lower("Idaho")) "ID" 
+    else if(lower(inputState) == lower("Illinois")) "IL" 
+    else if(lower(inputState) == lower("Indiana")) "IN" 
+    else if(lower(inputState) == lower("Iowa")) "IA" 
+    else if(lower(inputState) == lower("Kansas")) "KS" 
+    else if(lower(inputState) == lower("Kentucky")) "KY" 
+    else if(lower(inputState) == lower("Louisiana")) "LA" 
+    else if(lower(inputState) == lower("Maine")) "ME" 
+    else if(lower(inputState) == lower("Maryland")) "MD"
+    else if(lower(inputState) == lower("Massachusetts")) "MA"
+    else if(lower(inputState) == lower("Michigan")) "MI" 
+    else if(lower(inputState) == lower("Minnesota")) "MN" 
+    else if(lower(inputState) == lower("Mississippi")) "MS"
+    else if(lower(inputState) == lower("Missouri")) "MO" 
+    else if(lower(inputState) == lower("Montana")) "MT"
+    else if(lower(inputState) == lower("Nebraska")) "NE"
+    else if(lower(inputState) == lower("Nevada")) "NV"
+    else if(lower(inputState) == lower("New Hampshire")) "NH"
+    else if(lower(inputState) == lower("New Jersey")) "NJ"
+    else if(lower(inputState) == lower("New Mexico")) "NM"
+    else if(lower(inputState) == lower("New York")) "NY"
+    else if(lower(inputState) == lower("North Carolina")) "NC"
+    else if(lower(inputState) == lower("North Dakota")) "ND"
+    else if(lower(inputState) == lower("Ohio")) "OH"
+    else if(lower(inputState) == lower("Oklahoma")) "OK"
+    else if(lower(inputState) == lower("Oregon")) "OR"
+    else if(lower(inputState) == lower("Pennsylvania")) "PA"
+    else if(lower(inputState) == lower("Rhode Island")) "RI"
+    else if(lower(inputState) == lower("South Carolina")) "SC"
+    else if(lower(inputState) == lower("South Dakota")) "SD"
+    else if(lower(inputState) == lower("Tennessee")) "TN"
+    else if(lower(inputState) == lower("Texas")) "TX"
+    else if(lower(inputState) == lower("Utah")) "UT" 
+    else if(lower(inputState) == lower("Vermont")) "VT"
+    else if(lower(inputState) == lower("Virginia")) "VA" 
+    else if(lower(inputState) == lower("Washington")) "WA"
+    else if(lower(inputState) == lower("West Virginia")) "WV"
+    else if(lower(inputState) == lower("Wisconsin")) "WI"
+    else if(lower(inputState) == lower("Wyoming"))"WY"
+    else (inputState)
+---
+payload update field("architect_company_state") with getStateCode(payload.architect_company_state)
+update field("shipping_address_state") with getStateCode(payload.shipping_address_state)
+update field("billing_address_state") with getStateCode(payload.billing_address_state)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger: TBR " doc:id="69ea1877-bac5-4173-b03c-fc76b6a04392" message="#[payload]"/>
+		<salesforce:query doc:name="Search for existing opportunity" doc:id="858fc2fb-9ecd-4f37-b4e3-f3cebcbb296f" config-ref="Salesforce_Config" target="existingOpportunity" targetValue="#[payload[0]]">
+			<salesforce:salesforce-query ><![CDATA[select Id, OwnerId, Name from Opportunity where Architect_Designer_Company__r.Name = ':specifierCompany' and Architect_Designer_Company__r.BillingState = ':specifierState' and Architect_Designer_Company__r.BillingPostalCode = ':specifierZip'  and Name = ':projectName' 
+]]></salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[{
+	"specifierCompany": payload.architect_company,
+	"specifierState": payload.architect_company_state,
+	"specifierZip": payload.architect_company_ZIP,
+	"projectName": payload.project_name
+}]]]></salesforce:parameters>
+		</salesforce:query>
+		<choice doc:name="Choice" doc:id="fae21729-066f-4598-aa1d-aa5ce3787ac2" >
+			<when expression="#[vars.existingOpportunity.Id != null]">
+				<logger level="INFO" doc:name="Logger" doc:id="baf3c3ed-e638-440a-8dbd-137aa0296d28" message='#["Opportunity Exists, Link a Quote to that"]'/>
+				<flow-ref doc:name="billing-account-contact" doc:id="339ae26d-a296-4194-8d2c-bf7bce30c7d0" name="common-cntct-quoteFlow"/>
+				<flow-ref doc:name="shipping-account-contact" doc:id="05d6451b-0e15-49d1-a87a-c7e93fb251ca" name="common-shipping-acc-cntctFlow"/>
+				<ee:transform doc:name="var: quote" doc:id="81164108-875a-4c8d-a1f2-3b8204321deb" >
+					<ee:message >
 					</ee:message>
 					<ee:variables >
 						<ee:set-variable variableName="quote" ><![CDATA[%dw 2.0
 output application/json
-var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else false
 ---
 {
+	"OwnerId": vars.existingOpportunity.OwnerId default "0051N000006Baw3QAC",
+	SBQQ__ShippingName__c: payload.shipping_info_company_name,
+    "SBQQ__ShippingCity__c": payload.shipping_address_city,
+    "SBQQ__ShippingCountry__c": payload.shipping_address_country,
+    "SBQQ__ShippingPostalCode__c": payload.shipping_address_zip,
+    "SBQQ__ShippingState__c": payload.shipping_address_state,
+    "SBQQ__ShippingStreet__c": payload.shipping_address_street_address ++ " " ++ payload.shipping_address_line2,
+    "Billing_Company_Name__c": payload.billing_info_company_name,
+    "Billing_Contact_Name__c": payload.billing_info_contact_name,
+    "Billing_Email__c": payload.billing_info_contact_email,
+    "Billing_Phone__c": payload.billing_info_contact_phone,
+    "Billing_Fax__c": payload.billing_info_contact_fax,
+    "SBQQ__BillingCity__c": payload.billing_address_city,
+    "SBQQ__BillingCountry__c": payload.billing_address_country,
+    "SBQQ__BillingPostalCode__c": payload.billing_address_zip,
+    "SBQQ__BillingState__c": payload.billing_address_state,
+    "SBQQ__BillingStreet__c": payload.billing_address_street_address ++ " " ++ payload.billing_address_line2,
+    "Quote_Source__c": "Gravity Form",
+    "File_Uploads__c": payload.files,
+    "X3rd_Party_Link_to_file_uploads__c": payload."3rd_party_resource_link",
+    "SBQQ__Notes__c": payload."additional_notes",
+    "SBQQ__PricebookId__c": "@{refPriceBook.records[0].Id}",
+    "SBQQ__Opportunity2__c": vars.existingOpportunity.Id,
+    "Special_Shipping_Instructions__c": payload.shipping_info_special_instructions,
+    "Primary_Contact__c": if(vars.billContact.BillContactID != null)(vars.billContact.BillContactID) else ("@{refBillingContact.id}"),
+    "SBQQ__Account__c": if(vars.billAcc.BillAccID != null)(vars.billAcc.BillAccID) else ("@{refBillingAccount.id}"),
+    "Ship_To_Account__c": if(vars.shipAcc.ShipAccID != null)(vars.shipAcc.ShipAccID) else ("@{refShippingAccount.id}"),
+    "Ship_To_Contact__c": if(vars.shipContact.ShipContactID != null)(vars.shipContact.ShipContactID) else ("@{refShippingContact.id}")
+}]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<ee:transform doc:name="vars: compositePayload" doc:id="281d19b9-42ac-48ab-a0f7-4ff869d7a57d" >
+					<ee:message />
+					<ee:variables >
+						<ee:set-variable variableName="compositePayload" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "allOrNone": true,
+    "compositeRequest": [
+    	{
+            "method": "GET",
+            "url": "/services/data/v58.0/query?q=select Id from PriceBook2 where IsStandard = True LIMIT 1",
+            "referenceId": "refPriceBook"
+        }
+    ]
+    ++(
+    	if(vars.shipAcc.ShipAccID == null)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Account",
+            "referenceId": "refShippingAccount",
+            "body": (vars.shipAcc -- {"ShipAccID": null})
+    	}]) else ([])
+    )
+    ++(
+    	if(vars.shipContact.ShipContactID == null)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Contact",
+            "referenceId": "refShippingContact",
+            "body": (vars.shipContact -- {"ShipContactID": null})
+    	}]) else ([])
+    )
+    ++(
+    	if(vars.billAcc.BillAccID == null)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Account",
+            "referenceId": "refBillingAccount",
+            "body": (vars.billAcc -- {"BillAccID": null})
+    	}]) else ([])
+    )
+    ++(
+    	if(vars.billContact.BillContactID == null)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Contact",
+            "referenceId": "refBillingContact",
+            "body": (vars.billContact -- {"BillContactID": null})
+    	}]) else ([])
+    )
+    ++[
+    	{
+            "method": "POST",
+            "url": "/services/data/v58.0/sobjects/SBQQ__Quote__c",
+            "referenceId": "refQuote",
+            "body": vars.quote
+        }
+    ]
+}]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<salesforce-composite:execute-composite-request doc:name="dynamic-composite-call" doc:id="80b1bd82-181f-4e45-b195-38face2b981e" config-ref="Salesforce_Composite_Config" target="compQueryRes" >
+					<salesforce-composite:request-body ><![CDATA[#[vars.compositePayload]]]></salesforce-composite:request-body>
+				</salesforce-composite:execute-composite-request>
+				<flow-ref doc:name="product-creation" doc:id="db95b1bc-fd5a-47b8-8ef4-2a7625990ac7" name="products-creationFlow" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="create Oppotunity and then quote" doc:id="138effaa-6c9e-47d1-8414-0b61f4f5ae59" message='#["Uh oh, Opportunity does not Exists, create it first and then Link a Quote to that"]' />
+				<flow-ref doc:name="var: rawOppPayload" doc:id="c6b40af5-b556-4be8-85d7-1ea8885cbc16" name="generate-opportunity-dataFlow" target="rawOppPayload"/>
+				<choice doc:name="Choice" doc:id="3f9e797e-52ce-454d-97f7-2deb9cadc313">
+					<when expression="#[vars.rawOppPayload.Architect_Designer_Company__c == null]">
+						<flow-ref doc:name="billing-account-contact" doc:id="19b800ef-9d09-4ba2-9abc-08ae52c2e904" name="common-cntct-quoteFlow"/>
+						<flow-ref doc:name="shipping-account-contact" doc:id="264312a6-8b5d-4800-a7e5-7265af73c0f1" name="common-shipping-acc-cntctFlow" />
+						<ee:transform doc:name="var: refinedOppPayload, specifierAcc, quote" doc:id="45dbe78a-36b4-423b-8706-cb16c233d1f1">
+					<ee:message>
+					</ee:message>
+					<ee:variables>
+								<ee:set-variable variableName="refinedOppPayload"><![CDATA[%dw 2.0
+import * from dw::util::Values
+output application/json
+---
+(vars.rawOppPayload update field("Architect_Designer_Company__c") with "@{refSpecifierAccount.id}") ++ {
+	"Pricebook2Id": "@{refPriceBook.records[0].Id}"
+}]]></ee:set-variable>
+								<ee:set-variable variableName="specifierAcc"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Type": "Specifier - Undefined",
+	"Name": payload.architect_company,
+	"BillingState": payload.architect_company_state,	
+	"BillingPostalCode": payload.architect_company_ZIP
+}]]></ee:set-variable>
+								<ee:set-variable variableName="quote" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"OwnerId": vars.rawOppPayload.OwnerId,
+	SBQQ__ShippingName__c: payload.shipping_info_company_name,
+    "SBQQ__ShippingCity__c": payload.shipping_address_city,
+    "SBQQ__ShippingCountry__c": payload.shipping_address_country,
+    "SBQQ__ShippingPostalCode__c": payload.shipping_address_zip,
+    "SBQQ__ShippingState__c": payload.shipping_address_state,
+    "SBQQ__ShippingStreet__c": payload.shipping_address_street_address ++ " " ++ payload.shipping_address_line2,
+    "Billing_Company_Name__c": payload.billing_info_company_name,
+    "Billing_Contact_Name__c": payload.billing_info_contact_name,
+    "Billing_Email__c": payload.billing_info_contact_email,
+    "Billing_Phone__c": payload.billing_info_contact_phone,
+    "Billing_Fax__c": payload.billing_info_contact_fax,
+    "SBQQ__BillingCity__c": payload.billing_address_city,
+    "SBQQ__BillingCountry__c": payload.billing_address_country,
+    "SBQQ__BillingPostalCode__c": payload.billing_address_zip,
+    "SBQQ__BillingState__c": payload.billing_address_state,
+    "SBQQ__BillingStreet__c": payload.billing_address_street_address ++ " " ++ payload.billing_address_line2,
+    "Quote_Source__c": "Gravity Form",
+    "File_Uploads__c": payload.files,
+    "X3rd_Party_Link_to_file_uploads__c": payload."3rd_party_resource_link",
+    "SBQQ__Notes__c": payload."additional_notes",
+    "SBQQ__PricebookId__c": "@{refPriceBook.records[0].Id}",
+    "SBQQ__Opportunity2__c": "@{refOpportunity.id}",
+    "Special_Shipping_Instructions__c": payload.shipping_info_special_instructions,
+    "Primary_Contact__c": if(vars.billContact.BillContactID != null)(vars.billContact.BillContactID) else ("@{refBillingContact.id}"),
+    "SBQQ__Account__c": if(vars.billAcc.BillAccID != null)(vars.billAcc.BillAccID) else ("@{refBillingAccount.id}"),
+    "Ship_To_Account__c": if(vars.shipAcc.ShipAccID != null)(vars.shipAcc.ShipAccID) else ("@{refShippingAccount.id}"),
+    "Ship_To_Contact__c": if(vars.shipContact.ShipContactID != null)(vars.shipContact.ShipContactID) else ("@{refShippingContact.id}")
+}]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+						<ee:transform doc:name="vars: compositePayload" doc:id="862f41a2-ac79-4a04-8425-4e1863588da1">
+							<ee:message>
+							</ee:message>
+							<ee:variables >
+								<ee:set-variable variableName="compositePayload" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "allOrNone": true,
+    "compositeRequest": [
+    	{
+            "method": "GET",
+            "url": "/services/data/v58.0/query?q=select Id from PriceBook2 where IsStandard = True LIMIT 1",
+            "referenceId": "refPriceBook"
+        },
+        {
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Account",
+            "referenceId": "refSpecifierAccount",
+            "body": vars.specifierAcc
+    	},
+    	{
+            "method": "POST",
+            "url": "/services/data/v58.0/sobjects/Opportunity",
+            "referenceId": "refOpportunity",
+            "body": vars.refinedOppPayload
+        }
+    ]
+    ++(
+    	if(vars.shipAcc.ShipAccID == null)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Account",
+            "referenceId": "refShippingAccount",
+            "body": (vars.shipAcc -- {"ShipAccID": null})
+    	}]) else ([])
+    )
+    ++(
+    	if(vars.shipContact.ShipContactID == null)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Contact",
+            "referenceId": "refShippingContact",
+            "body": (vars.shipContact -- {"ShipContactID": null})
+    	}]) else ([])
+    )
+    ++(
+    	if(vars.billAcc.BillAccID == null)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Account",
+            "referenceId": "refBillingAccount",
+            "body": (vars.billAcc -- {"BillAccID": null})
+    	}]) else ([])
+    )
+    ++(
+    	if(vars.billContact.BillContactID == null)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Contact",
+            "referenceId": "refBillingContact",
+            "body": (vars.billContact -- {"BillContactID": null})
+    	}]) else ([])
+    )
+    ++[
+    	{
+            "method": "POST",
+            "url": "/services/data/v58.0/sobjects/SBQQ__Quote__c",
+            "referenceId": "refQuote",
+            "body": vars.quote
+        }
+    ]
+}]]></ee:set-variable>
+							</ee:variables>
+						</ee:transform>
+						<salesforce-composite:execute-composite-request doc:name="dynamic-composite-call" doc:id="f6a9d3e5-fa05-4c50-a2e7-052454cbd0e3" config-ref="Salesforce_Composite_Config" target="compQueryRes">
+							<salesforce-composite:request-body><![CDATA[#[vars.compositePayload]]]></salesforce-composite:request-body>
+						</salesforce-composite:execute-composite-request>
+						<flow-ref doc:name="product-creation" doc:id="febef58a-c5c5-41c8-8916-7ee58caf9236" name="products-creationFlow" />
+					</when>
+					<otherwise >
+						<logger level="INFO" doc:name="Logger" doc:id="3061a793-5288-48b1-9b8a-d9051cd4b7ee" message='#["Specifier account exists"]' />
+						<flow-ref doc:name="billing-account-contact" doc:id="1786087a-1e0c-4f5f-971c-ea2759665b90" name="common-cntct-quoteFlow"/>
+						<flow-ref doc:name="shipping-account-contact" doc:id="5b53541b-6ef5-44d2-a6a0-90055e94d51a" name="common-shipping-acc-cntctFlow" />
+						<ee:transform doc:name="var: refinedOppPayload, quote" doc:id="78034100-dbf3-4d41-a727-60cbcd53435a">
+							<ee:message>
+							</ee:message>
+							<ee:variables>
+								<ee:set-variable variableName="refinedOppPayload"><![CDATA[%dw 2.0
+output application/json
+---
+vars.rawOppPayload  ++ {
+	"Pricebook2Id": "@{refPriceBook.records[0].Id}"
+}]]></ee:set-variable>
+								<ee:set-variable variableName="quote" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"OwnerId": vars.rawOppPayload.OwnerId,
+	SBQQ__ShippingName__c: payload.shipping_info_company_name,
+    "SBQQ__ShippingCity__c": payload.shipping_address_city,
+    "SBQQ__ShippingCountry__c": payload.shipping_address_country,
+    "SBQQ__ShippingPostalCode__c": payload.shipping_address_zip,
+    "SBQQ__ShippingState__c": payload.shipping_address_state,
+    "SBQQ__ShippingStreet__c": payload.shipping_address_street_address ++ " " ++ payload.shipping_address_line2,
+    "Billing_Company_Name__c": payload.billing_info_company_name,
+    "Billing_Contact_Name__c": payload.billing_info_contact_name,
+    "Billing_Email__c": payload.billing_info_contact_email,
+    "Billing_Phone__c": payload.billing_info_contact_phone,
+    "Billing_Fax__c": payload.billing_info_contact_fax,
+    "SBQQ__BillingCity__c": payload.billing_address_city,
+    "SBQQ__BillingCountry__c": payload.billing_address_country,
+    "SBQQ__BillingPostalCode__c": payload.billing_address_zip,
+    "SBQQ__BillingState__c": payload.billing_address_state,
+    "SBQQ__BillingStreet__c": payload.billing_address_street_address ++ " " ++ payload.billing_address_line2,
+    "Quote_Source__c": "Gravity Form",
+    "File_Uploads__c": payload.files,
+    "X3rd_Party_Link_to_file_uploads__c": payload."3rd_party_resource_link",
+    "SBQQ__Notes__c": payload."additional_notes",
+    "SBQQ__PricebookId__c": "@{refPriceBook.records[0].Id}",
+    "SBQQ__Opportunity2__c": "@{refOpportunity.id}",
+    "Special_Shipping_Instructions__c": payload.shipping_info_special_instructions,
+    "Primary_Contact__c": if(vars.billContact.BillContactID != null)(vars.billContact.BillContactID) else ("@{refBillingContact.id}"),
+    "SBQQ__Account__c": if(vars.billAcc.BillAccID != null)(vars.billAcc.BillAccID) else ("@{refBillingAccount.id}"),
+    "Ship_To_Account__c": if(vars.shipAcc.ShipAccID != null)(vars.shipAcc.ShipAccID) else ("@{refShippingAccount.id}"),
+    "Ship_To_Contact__c": if(vars.shipContact.ShipContactID != null)(vars.shipContact.ShipContactID) else ("@{refShippingContact.id}")
+}]]></ee:set-variable>
+							</ee:variables>
+						</ee:transform>
+						<ee:transform doc:name="vars: compositePayload" doc:id="e0e1e68b-98ab-4bf1-81ec-1f314266836b" >
+							<ee:message />
+							<ee:variables >
+								<ee:set-variable variableName="compositePayload" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "allOrNone": true,
+    "compositeRequest": [
+    	{
+            "method": "GET",
+            "url": "/services/data/v58.0/query?q=select Id from PriceBook2 where IsStandard = True LIMIT 1",
+            "referenceId": "refPriceBook"
+        },
+    	{
+            "method": "POST",
+            "url": "/services/data/v58.0/sobjects/Opportunity",
+            "referenceId": "refOpportunity",
+            "body": vars.refinedOppPayload
+        }
+    ]
+    ++(
+    	if(vars.shipAcc.ShipAccID == null)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Account",
+            "referenceId": "refShippingAccount",
+            "body": (vars.shipAcc -- {"ShipAccID": null})
+    	}]) else ([])
+    )
+    ++(
+    	if(vars.shipContact.ShipContactID == null)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Contact",
+            "referenceId": "refShippingContact",
+            "body": (vars.shipContact -- {"ShipContactID": null})
+    	}]) else ([])
+    )
+    ++(
+    	if(vars.billAcc.BillAccID == null)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Account",
+            "referenceId": "refBillingAccount",
+            "body": (vars.billAcc -- {"BillAccID": null})
+    	}]) else ([])
+    )
+    ++(
+    	if(vars.billContact.BillContactID == null)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Contact",
+            "referenceId": "refBillingContact",
+            "body": (vars.billContact -- {"BillContactID": null})
+    	}]) else ([])
+    )
+    ++[
+    	{
+            "method": "POST",
+            "url": "/services/data/v58.0/sobjects/SBQQ__Quote__c",
+            "referenceId": "refQuote",
+            "body": vars.quote
+        }
+    ]
+}]]></ee:set-variable>
+							</ee:variables>
+						</ee:transform>
+						<salesforce-composite:execute-composite-request doc:name="dynamic-composite-call" doc:id="0b405f8c-0cd9-4781-885e-885f51f4cc86" config-ref="Salesforce_Composite_Config" target="compQueryRes" >
+							<salesforce-composite:request-body ><![CDATA[#[vars.compositePayload]]]></salesforce-composite:request-body>
+						</salesforce-composite:execute-composite-request>
+						<flow-ref doc:name="product-creation" doc:id="d4df9d32-ae74-4c59-8568-16b212bfe110" name="products-creationFlow" />
+					</otherwise>
+				</choice>
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="response-generation" doc:id="c8fee69a-7b94-42dd-beca-32d96c0f6e06" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  ("BillingAccountId": (vars.compQueryRes.compositeResponse filter $.referenceId == "refBillingAccount")[0].body.id) if((vars.compQueryRes.compositeResponse filter $.referenceId == "refBillingAccount")[0].body.id != null),
+  ("SpecifierAccountId": (vars.compQueryRes.compositeResponse filter $.referenceId == "refSpecifierAccount")[0].body.id) if((vars.compQueryRes.compositeResponse filter $.referenceId == "refSpecifierAccount")[0].body.id != null),
+  ("ShippingAccountId": (vars.compQueryRes.compositeResponse filter $.referenceId == "refShippingAccount")[0].body.id) if((vars.compQueryRes.compositeResponse filter $.referenceId == "refShippingAccount")[0].body.id != null),
+  ("ShippingContactId": (vars.compQueryRes.compositeResponse filter $.referenceId == "refShippingContact")[0].body.id) if((vars.compQueryRes.compositeResponse filter $.referenceId == "refShippingContact")[0].body.id != null),
+  ("BillingContactId": (vars.compQueryRes.compositeResponse filter $.referenceId == "refBillingContact")[0].body.id) if((vars.compQueryRes.compositeResponse filter $.referenceId == "refBillingContact")[0].body.id != null),
+  ("OpportunityId": (vars.compQueryRes.compositeResponse filter $.referenceId == "refOpportunity")[0].body.id) if((vars.compQueryRes.compositeResponse filter $.referenceId == "refOpportunity")[0].body.id != null),
+  ("QuoteId": (vars.compQueryRes.compositeResponse filter $.referenceId == "refQuote")[0].body.id) if((vars.compQueryRes.compositeResponse filter $.referenceId == "refQuote")[0].body.id != null),
+  "Products": {
+    "KuvioSuccess": vars.kuvioRecords.success,
+    "KuvioFailure": vars.kuvioRecords.failure,
+    "DecorSuccess": vars.decorRecords.success,
+    "DecorFailure": vars.decorRecords.failure
+  }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="printing-response" doc:id="ac20beb4-8719-4803-ac4b-bf8257f7bd3e" message="#[payload]"/>
+	</flow>
+	<!-- [STUDIO:"generate-quoteFlow1"]<flow name="generate-quoteFlow1" doc:id="58206545-54b2-4025-9410-33ada2fa1b31" >
+		<logger level="INFO" doc:name="Logger" doc:id="cbe99a04-3a8f-4e9f-bae7-f735bddaeb28" />
+		<choice doc:name="Choice" doc:id="b6e249ed-ef81-4ba3-92e9-2cd776137b22">
+			<when expression='#[payload.quote_number != ""&#93;'>
+			<logger level="INFO" doc:name="existing-quote-number" doc:id="7b65c0e2-a1ba-4bd3-94cb-97f004434407" message='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Adding quote to existing opportunity as fetched by given quote number"&#10;}&#93;' />
+				<ee:transform doc:name="var: quote" doc:id="546d171e-4fa7-4bde-8ca4-849f91c12b4f">
+					<ee:message>
+					</ee:message>
+					<ee:variables>
+						<ee:set-variable variableName="quote"><![CDATA[%dw 2.0
+output application/json
+var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else false
+&#45;&#45;-
+{
+	"OwnerId": "@{refOppOwner.records[0&#93;.OwnerId}",
     "SBQQ__ShippingCity__c": payload.shipping_address_city,
     "SBQQ__ShippingCountry__c": payload.shipping_address_country,
     "SBQQ__ShippingPostalCode__c": payload.shipping_address_zip,
@@ -54,18 +533,23 @@ var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else fals
     "File_Uploads__c": payload.files,
     "X3rd_Party_Link_to_file_uploads__c": payload."3rd_party_resource_link",
     "SBQQ__Notes__c": payload."additional_notes",
-    "SBQQ__PricebookId__c": "@{refPriceBook.records[0].Id}",
-    "SBQQ__Opportunity2__c": "@{refOpp.records[0].SBQQ__Opportunity2__c}"
-}]]></ee:set-variable>
+    "SBQQ__PricebookId__c": "@{refPriceBook.records[0&#93;.Id}",
+    "SBQQ__Opportunity2__c": "@{refOpp.records[0&#93;.SBQQ__Opportunity2__c}"
+}&#93;&#93;></ee:set-variable>
 					</ee:variables>
 				</ee:transform>
-				<salesforce-composite:execute-composite-request doc:name="get: opportunity, pricebook; post: quote" doc:id="49605d74-5a76-4058-ada1-5cbb43a5d845" config-ref="Salesforce_Composite_Config" >
-					<salesforce-composite:request-body ><![CDATA[#[{
+				<salesforce-composite:execute-composite-request doc:name="get: opportunity, pricebook; post: quote" doc:id="49605d74-5a76-4058-ada1-5cbb43a5d845" config-ref="Salesforce_Composite_Config" target="compQueryRes">
+					<salesforce-composite:request-body><![CDATA[#[{
     "compositeRequest": [
     	{
             "method": "GET",
             "url": "/services/data/v58.0/query?q=select Name, SBQQ__Opportunity2__c from SBQQ__Quote__c where Name = '" ++ vars.quoteNumber ++ "'",
             "referenceId": "refOpp"
+        },
+        {
+            "method": "GET",
+            "url": "/services/data/v58.0/query?q=select OwnerId from Opportunity where Id = '@{refOpp.records[0&#93;.SBQQ__Opportunity2__c}'",
+            "referenceId": "refOppOwner"
         },
         {
             "method": "GET",
@@ -78,19 +562,19 @@ var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else fals
             "referenceId": "refQuote",
             "body": vars.quote
         }
-    ]
-}]]]></salesforce-composite:request-body>
+    &#93;
+}&#93;&#93;&#93;></salesforce-composite:request-body>
 				</salesforce-composite:execute-composite-request>
-				<flow-ref doc:name="product-creation" doc:id="671b3b40-3b16-48e3-b7c6-f6431a22717a" name="products-creationFlow"/>
+				<flow-ref doc:name="product-creation" doc:id="671b3b40-3b16-48e3-b7c6-f6431a22717a" name="products-creationFlow" />
 			</when>
-			<otherwise >
-				<logger level="INFO" doc:name="checking-existing-account" doc:id="6c0b4142-1768-4fda-be23-594699bffbd3" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Checking whether the mentioned account exists"&#10;}]'/>
+			<otherwise>
+				<logger level="INFO" doc:name="checking-existing-account" doc:id="6c0b4142-1768-4fda-be23-594699bffbd3" message='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Checking whether the mentioned account exists"&#10;}&#93;' />
 				<salesforce:query doc:name="CheckExistingAccount" doc:id="13c64091-4e41-4422-b164-f2a1b2c0d24b" config-ref="Salesforce_Config" target="cea">
 					<reconnect />
-					<salesforce:salesforce-query ><![CDATA[select Id, Name from Account where Name = ':name']]></salesforce:salesforce-query>
-					<salesforce:parameters ><![CDATA[#[{
+					<salesforce:salesforce-query><![CDATA[select Id, Name from Account where Name = ':name'&#93;&#93;></salesforce:salesforce-query>
+					<salesforce:parameters><![CDATA[#[{
 	"name": payload.shipping_info_company_name
-}]]]></salesforce:parameters>
+}&#93;&#93;&#93;></salesforce:parameters>
 				</salesforce:query>
 				<ee:transform doc:name="Var: AccountId" doc:id="bc6218ad-4d38-4857-9c14-1817486fc0f0">
 					<ee:message>
@@ -98,50 +582,51 @@ var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else fals
 							<ee:variables>
 								<ee:set-variable variableName="accountId"><![CDATA[%dw 2.0
 output application/json
----
-vars.cea[0].Id]]></ee:set-variable>
+&#45;&#45;-
+vars.cea[0&#93;.Id&#93;&#93;></ee:set-variable>
 							</ee:variables>
 				</ee:transform>
-				<choice doc:name="Choice" doc:id="55503319-de41-460d-a8a7-d7e597cd6ad6" >
-					<when expression="#[sizeOf(vars.cea) != 0]">
-						<logger level="INFO" doc:name="checking-contact" doc:id="075f7c65-f64c-4925-8ea9-b0ee89960469" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Checking whether the contact exists"&#10;}]'/>
+				<choice doc:name="Choice" doc:id="55503319-de41-460d-a8a7-d7e597cd6ad6">
+					<when expression="#[sizeOf(vars.cea) != 0&#93;">
+						<logger level="INFO" doc:name="checking-contact" doc:id="075f7c65-f64c-4925-8ea9-b0ee89960469" message='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Checking whether the contact exists"&#10;}&#93;' />
 						<salesforce:query doc:name="CheckExistingContact" doc:id="703532c6-2db8-457a-81be-39f4182fc0d1" config-ref="Salesforce_Config" target="cec">
-							<salesforce:salesforce-query ><![CDATA[select Id from Contact where Name = ':name' and Email = ':email']]></salesforce:salesforce-query>
-							<salesforce:parameters ><![CDATA[#[{
+							<salesforce:salesforce-query><![CDATA[select Id from Contact where Name = ':name' and Email = ':email'&#93;&#93;></salesforce:salesforce-query>
+							<salesforce:parameters><![CDATA[#[{
 	"name": payload.shipping_info_contact_name,
 	"email": payload.shipping_info_contact_email
-}]]]></salesforce:parameters>
+}&#93;&#93;&#93;></salesforce:parameters>
 						</salesforce:query>
-						<choice doc:name="Choice" doc:id="b52c45a1-c8d4-4166-8981-97ea04e5c09c" >
-							<when expression="#[sizeOf(vars.cec) != 0]">
-								<logger level="INFO" doc:name="opportunity-quote" doc:id="3b6608a0-b125-442e-8f8a-133537816691" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Creating opportunity and quote"&#10;}]'/>
+						<choice doc:name="Choice" doc:id="b52c45a1-c8d4-4166-8981-97ea04e5c09c">
+							<when expression="#[sizeOf(vars.cec) != 0&#93;">
+								<logger level="INFO" doc:name="opportunity-quote" doc:id="3b6608a0-b125-442e-8f8a-133537816691" message='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Creating opportunity and quote"&#10;}&#93;' />
 								<flow-ref doc:name="opportunity-data-creation" doc:id="f26291b2-c47d-4605-a8c0-2086575c869d" name="generate-opportunity-dataFlow" target="opp" />
 								<ee:transform doc:name="var: opportunity, quote" doc:id="ec20a90a-fcb5-4c8c-a450-e64123cbd8f8">
 									<ee:message>
 									</ee:message>
-									<ee:variables >
-										<ee:set-variable variableName="opportunity" ><![CDATA[%dw 2.0
+									<ee:variables>
+										<ee:set-variable variableName="opportunity"><![CDATA[%dw 2.0
 output application/json
----
+&#45;&#45;-
 if(vars.opp.Sales_Rep_Company__c == null)(vars.opp ++
 	{
 		"AccountId": vars.accountId,
 		"Sales_Rep_Company__c": vars.accountId,
-		"Pricebook2Id": "@{refPriceBook.records[0].Id}"	
+		"Pricebook2Id": "@{refPriceBook.records[0&#93;.Id}"	
 	}
 )
 else (
 vars.opp ++
 {
 	"AccountId": vars.accountId,
-	"Pricebook2Id": "@{refPriceBook.records[0].Id}"
+	"Pricebook2Id": "@{refPriceBook.records[0&#93;.Id}"
 })
-]]></ee:set-variable>
-										<ee:set-variable variableName="quote" ><![CDATA[%dw 2.0
+&#93;&#93;></ee:set-variable>
+										<ee:set-variable variableName="quote"><![CDATA[%dw 2.0
 output application/json
 var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else false
----
+&#45;&#45;-
 {
+	"OwnerId": vars.opp.OwnerId, // will never be null
     "SBQQ__ShippingCity__c": payload.shipping_address_city,
     "SBQQ__ShippingCountry__c": payload.shipping_address_country,
     "SBQQ__ShippingPostalCode__c": payload.shipping_address_zip,
@@ -161,14 +646,14 @@ var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else fals
     "File_Uploads__c": payload.files,
     "X3rd_Party_Link_to_file_uploads__c": payload."3rd_party_resource_link",
     "SBQQ__Notes__c": payload."additional_notes",
-    "SBQQ__PriceBook__c": "@{refPriceBook.records[0].Id}",
-    "SBQQ__PricebookId__c": "@{refPriceBook.records[0].Id}",
+    "SBQQ__PriceBook__c": "@{refPriceBook.records[0&#93;.Id}",
+    "SBQQ__PricebookId__c": "@{refPriceBook.records[0&#93;.Id}",
     "SBQQ__Opportunity2__c": "@{refOpportunity.id}"
-}]]></ee:set-variable>
+}&#93;&#93;></ee:set-variable>
 									</ee:variables>
 								</ee:transform>
 								<salesforce-composite:execute-composite-request doc:name="opp-qoute" doc:id="7aa59995-fc89-48e5-be12-fa1cfb0376fb" config-ref="Salesforce_Composite_Config" target="compQueryRes">
-									<salesforce-composite:request-body ><![CDATA[#[{
+									<salesforce-composite:request-body><![CDATA[#[{
     "allOrNone": true,
     "compositeRequest": [
     	{
@@ -188,39 +673,40 @@ var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else fals
             "referenceId": "refQuote",
             "body": vars.quote
         }
-    ]
-}]]]></salesforce-composite:request-body>
+    &#93;
+}&#93;&#93;&#93;></salesforce-composite:request-body>
 								</salesforce-composite:execute-composite-request>
 								<flow-ref doc:name="product-creation" doc:id="cf8623fd-7802-45c6-976e-19803183c3dd" name="products-creationFlow" />
 							
 </when>
-							<otherwise >
-								<logger level="INFO" doc:name="contact-opportunity-quote" doc:id="39a4fab4-defd-45a4-8d75-c8eb22a97301" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Creating contact opportunity and quote"&#10;}]'/>
+							<otherwise>
+								<logger level="INFO" doc:name="contact-opportunity-quote" doc:id="39a4fab4-defd-45a4-8d75-c8eb22a97301" message='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Creating contact opportunity and quote"&#10;}&#93;' />
 								<flow-ref doc:name="opportunity-data-creation" doc:id="3b9170be-e34a-4819-82ed-5c3f3335e87e" name="generate-opportunity-dataFlow" target="opp" />
 								<ee:transform doc:name="var: Cntct, opportunity, quote" doc:id="38f77c20-ba92-4926-9d66-b3bacae9bc9f">
 									<ee:message />
 									<ee:variables>
 										<ee:set-variable variableName="opportunity"><![CDATA[%dw 2.0
 output application/json
----
+&#45;&#45;-
 if(vars.opp.Sales_Rep_Company__c == null)(vars.opp ++
 	{
 		"AccountId": vars.accountId,
 		"Sales_Rep_Company__c": vars.accountId,
-		"Pricebook2Id": "@{refPriceBook.records[0].Id}"	
+		"Pricebook2Id": "@{refPriceBook.records[0&#93;.Id}"	
 	}
 )
 else (
 vars.opp ++
 {
 	"AccountId": vars.accountId,
-	"Pricebook2Id": "@{refPriceBook.records[0].Id}"
-})]]></ee:set-variable>
+	"Pricebook2Id": "@{refPriceBook.records[0&#93;.Id}"
+})&#93;&#93;></ee:set-variable>
 										<ee:set-variable variableName="quote"><![CDATA[%dw 2.0
 output application/json
 var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else false
----
+&#45;&#45;-
 {
+	"OwnerId": vars.opp.OwnerId,
     "SBQQ__ShippingCity__c": payload.shipping_address_city,
     "SBQQ__ShippingCountry__c": payload.shipping_address_country,
     "SBQQ__ShippingPostalCode__c": payload.shipping_address_zip,
@@ -240,17 +726,17 @@ var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else fals
     "File_Uploads__c": payload.files,
     "X3rd_Party_Link_to_file_uploads__c": payload."3rd_party_resource_link",
     "SBQQ__Notes__c": payload."additional_notes",
-    "SBQQ__PricebookId__c": "@{refPriceBook.records[0].Id}",
+    "SBQQ__PricebookId__c": "@{refPriceBook.records[0&#93;.Id}",
     "SBQQ__Opportunity2__c": "@{refOpportunity.id}"
-}]]></ee:set-variable>
-										<ee:set-variable variableName="Cntct" ><![CDATA[%dw 2.0
+}&#93;&#93;></ee:set-variable>
+										<ee:set-variable variableName="Cntct"><![CDATA[%dw 2.0
 output application/json
 var nameSize = sizeOf(payload.shipping_info_contact_name splitBy " ")
 var fName = if(nameSize == 1)("")
-	else ((payload.shipping_info_contact_name splitBy(" "))[0] default "")
+	else ((payload.shipping_info_contact_name splitBy(" "))[0&#93; default "")
 var lName = if(nameSize == 1)(payload.shipping_info_contact_name)
-	else ((payload.shipping_info_contact_name splitBy(" ")) -- [fName] joinBy " " default "")
-	---
+	else ((payload.shipping_info_contact_name splitBy(" ")) &#45;&#45; [fName&#93; joinBy " " default "")
+	&#45;&#45;-
 {
     "AccountId": vars.accountId,
     "FirstName": fName,
@@ -259,11 +745,11 @@ var lName = if(nameSize == 1)(payload.shipping_info_contact_name)
     "Phone": payload.shipping_info_contact_phone,
     "Fax": payload.shipping_info_contact_fax
 }
-]]></ee:set-variable>
+&#93;&#93;></ee:set-variable>
 									</ee:variables>
 								</ee:transform>
 								<salesforce-composite:execute-composite-request doc:name="Cntct-Opportunity-Quote" doc:id="12a0027d-a19e-441d-a989-c9488bbc8131" config-ref="Salesforce_Composite_Config" target="compQueryRes">
-									<salesforce-composite:request-body ><![CDATA[#[{
+									<salesforce-composite:request-body><![CDATA[#[{
     "allOrNone": true,
     "compositeRequest": [
         {
@@ -289,25 +775,25 @@ var lName = if(nameSize == 1)(payload.shipping_info_contact_name)
             "referenceId": "refQuote",
             "body": vars.quote
         }
-    ]
-}]]]></salesforce-composite:request-body>
+    &#93;
+}&#93;&#93;&#93;></salesforce-composite:request-body>
 								</salesforce-composite:execute-composite-request>
 								<flow-ref doc:name="product-creation" doc:id="154694f3-5ebe-4a76-a423-1c3e9ecc29ea" name="products-creationFlow" />
 							</otherwise>
 						</choice>
 					
 </when>
-					<otherwise >
-						<logger level="INFO" doc:name="all-four-objects" doc:id="410d1aef-8b33-4448-a3ad-65864e2a979c" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Entering all four objects"&#10;}]'/>
-						<flow-ref doc:name="opportunity-data-creation" doc:id="2dd5ac35-9227-435b-87a3-130774106598" name="generate-opportunity-dataFlow" target="opp"/>
+					<otherwise>
+						<logger level="INFO" doc:name="all-four-objects" doc:id="410d1aef-8b33-4448-a3ad-65864e2a979c" message='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Entering all four objects"&#10;}&#93;' />
+						<flow-ref doc:name="opportunity-data-creation" doc:id="2dd5ac35-9227-435b-87a3-130774106598" name="generate-opportunity-dataFlow" target="opp" />
 						<ee:transform doc:name="var: Acc, Cntct, Opp, Quote" doc:id="c5f2a9e1-e05f-4d1c-818e-fd89c1e05f31">
 							<ee:message>
 							</ee:message>
-							<ee:variables >
-								<ee:set-variable variableName="Acc" ><![CDATA[%dw 2.0
+							<ee:variables>
+								<ee:set-variable variableName="Acc"><![CDATA[%dw 2.0
 output application/json
 var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else false
----
+&#45;&#45;-
 {
     "Name": payload.shipping_info_company_name,
     "Type": "End User",
@@ -327,15 +813,15 @@ var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else fals
     "BillingState": if(isBIentered)payload.billing_address_state else payload.shipping_address_state,
     "BillingPostalCode": if(isBIentered)payload.billing_address_zip else payload.shipping_address_zip,
     "BillingCountry": if(isBIentered)payload.billing_address_country else payload.shipping_address_country 
-}]]></ee:set-variable>
-								<ee:set-variable variableName="Cntct" ><![CDATA[%dw 2.0
+}&#93;&#93;></ee:set-variable>
+								<ee:set-variable variableName="Cntct"><![CDATA[%dw 2.0
 output application/json
 var nameSize = sizeOf(payload.shipping_info_contact_name splitBy " ")
 var fName = if(nameSize == 1)("")
-	else ((payload.shipping_info_contact_name splitBy(" "))[0] default "")
+	else ((payload.shipping_info_contact_name splitBy(" "))[0&#93; default "")
 var lName = if(nameSize == 1)(payload.shipping_info_contact_name)
-	else ((payload.shipping_info_contact_name splitBy(" ")) -- [fName] joinBy " " default "")
----
+	else ((payload.shipping_info_contact_name splitBy(" ")) &#45;&#45; [fName&#93; joinBy " " default "")
+&#45;&#45;-
 {
     "AccountId": "@{refAccount.id}",
     "FirstName": fName,
@@ -344,29 +830,30 @@ var lName = if(nameSize == 1)(payload.shipping_info_contact_name)
     "Phone": payload.shipping_info_contact_phone,
     "Fax": payload.shipping_info_contact_fax
 }
-]]></ee:set-variable>
-								<ee:set-variable variableName="opportunity" ><![CDATA[%dw 2.0
+&#93;&#93;></ee:set-variable>
+								<ee:set-variable variableName="opportunity"><![CDATA[%dw 2.0
 output application/json
----
+&#45;&#45;-
 if(vars.opp.Sales_Rep_Company__c == null)(vars.opp ++
 	{
 		"AccountId": "@{refAccount.id}",
 		"Sales_Rep_Company__c": "@{refAccount.id}",
-		"Pricebook2Id": "@{refPriceBook.records[0].Id}"	
+		"Pricebook2Id": "@{refPriceBook.records[0&#93;.Id}"	
 	}
 )
 else (
 vars.opp ++
 {
 	"AccountId": "@{refAccount.id}",
-	"Pricebook2Id": "@{refPriceBook.records[0].Id}"
+	"Pricebook2Id": "@{refPriceBook.records[0&#93;.Id}"
 })
-]]></ee:set-variable>
-								<ee:set-variable variableName="quote" ><![CDATA[%dw 2.0
+&#93;&#93;></ee:set-variable>
+								<ee:set-variable variableName="quote"><![CDATA[%dw 2.0
 output application/json
 var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else false
----
+&#45;&#45;-
 {
+	"OwnerId": vars.opp.OwnerId,
     "SBQQ__ShippingCity__c": payload.shipping_address_city,
     "SBQQ__ShippingCountry__c": payload.shipping_address_country,
     "SBQQ__ShippingPostalCode__c": payload.shipping_address_zip,
@@ -386,13 +873,13 @@ var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else fals
     "File_Uploads__c": payload.files,
     "X3rd_Party_Link_to_file_uploads__c": payload."3rd_party_resource_link",
     "SBQQ__Notes__c": payload."additional_notes",
-    "SBQQ__PricebookId__c": "@{refPriceBook.records[0].Id}",
+    "SBQQ__PricebookId__c": "@{refPriceBook.records[0&#93;.Id}",
     "SBQQ__Opportunity2__c": "@{refOpportunity.id}"
-}]]></ee:set-variable>
+}&#93;&#93;></ee:set-variable>
 							</ee:variables>
 						</ee:transform>
 						<salesforce-composite:execute-composite-request doc:name="Acc-Cntct-Opp-Quote" doc:id="49be2771-3338-46f3-8d59-932b2a82b60a" config-ref="Salesforce_Composite_Config" target="compQueryRes">
-							<salesforce-composite:request-body ><![CDATA[#[{
+							<salesforce-composite:request-body><![CDATA[#[{
     "allOrNone": true,
     "compositeRequest": [
         {
@@ -424,8 +911,8 @@ var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else fals
             "referenceId": "refQuote",
             "body": vars.quote
         }
-    ]
-}]]]></salesforce-composite:request-body>
+    &#93;
+}&#93;&#93;&#93;></salesforce-composite:request-body>
 						</salesforce-composite:execute-composite-request>
 						<flow-ref doc:name="product-creation" doc:id="f7f6e23a-2c95-4b54-8dc5-b53ba03e749e" name="products-creationFlow" />
 					
@@ -433,25 +920,5 @@ var isBIentered = if(payload.cb_is_billing_info_different1 != "") true else fals
 				</choice>
 			</otherwise>
 		</choice>
-		<ee:transform doc:name="response-generation" doc:id="c8fee69a-7b94-42dd-beca-32d96c0f6e06" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{
-  ("AccountId": (vars.compQueryRes.compositeResponse filter $.referenceId == "refAccount")[0].body.id) if((vars.compQueryRes.compositeResponse filter $.referenceId == "refAccount")[0].body.id != null),
-  ("ContactId": (vars.compQueryRes.compositeResponse filter $.referenceId == "refContact")[0].body.id) if((vars.compQueryRes.compositeResponse filter $.referenceId == "refContact")[0].body.id != null),
-  ("OpportunityId": (vars.compQueryRes.compositeResponse filter $.referenceId == "refOpportunity")[0].body.id) if((vars.compQueryRes.compositeResponse filter $.referenceId == "refOpportunity")[0].body.id != null),
-  ("QuoteId": (vars.compQueryRes.compositeResponse filter $.referenceId == "refQuote")[0].body.id) if((vars.compQueryRes.compositeResponse filter $.referenceId == "refQuote")[0].body.id != null),
-  "Products": {
-    "KuvioSuccess": vars.kuvioRecords.success,
-    "KuvioFailure": vars.kuvioRecords.failure,
-    "DecorSuccess": vars.decorRecords.success,
-    "DecorFailure": vars.decorRecords.failure
-  }
-}]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-		<logger level="INFO" doc:name="printing-response" doc:id="ac20beb4-8719-4803-ac4b-bf8257f7bd3e" message="#[payload]"/>
-	</flow>
+	</flow> [STUDIO] -->
 </mule>

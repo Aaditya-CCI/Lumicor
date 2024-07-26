@@ -19,13 +19,13 @@ http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/em
 		</http:default-headers>
 	
 </http:request-config>
-	<configuration-properties doc:name="Configuration properties" doc:id="514a4ee6-47e4-45c9-9570-25178fe7edda" file="properties\config-${mule.env}.yaml" />
-	<api-gateway:autodiscovery apiId="19599698" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="233e8317-f0bc-4442-9387-d971891a9e41" flowRef="gravityforms-quoterequest-exp-api-main" />
-	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="4bd7ce38-a4b6-4d97-a979-750ddbd09dea" >
-		<email:smtp-connection host="smtp.gmail.com" port="587" user="aaditya.duggal@caeliusconsulting.com" password="uirpgpkljbqbngio" >
+<email:smtp-config name="Email_SMTP1" doc:name="Email SMTP" doc:id="c69c87ad-2a37-495f-9b8b-b78433306e14" >
+		<email:smtp-connection host="smtp.gmail.com" port="587" user="LumicorWebmaster@gmail.com" password=" mtgprfwmntrrbhlw" >
 			<email:properties >
 				<email:property key="mail.smtp.starttls.enable" value="true" />
 			</email:properties>
 		</email:smtp-connection>
-	</email:smtp-config> 
+	</email:smtp-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="514a4ee6-47e4-45c9-9570-25178fe7edda" file="properties\config-${mule.env}.yaml" />
+	<api-gateway:autodiscovery apiId="${api.id}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="233e8317-f0bc-4442-9387-d971891a9e41" flowRef="gravityforms-quoterequest-exp-api-main" /> 
 </mule>

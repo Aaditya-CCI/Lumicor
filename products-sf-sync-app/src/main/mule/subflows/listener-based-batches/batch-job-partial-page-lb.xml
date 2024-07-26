@@ -23,16 +23,19 @@ http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mu
 							externalIdFieldName="ItemID__c" doc:name="lumicorDB to Product"
 							doc:id="53eb3c2a-e9ab-4205-9c3c-774f919cef40"
 							config-ref="Salesforce_Config" />
+						<logger level="INFO" doc:name="Logger: payload" doc:id="3ceac39c-a637-476e-824b-d060672e078e" message="#[%dw 2.0&#10;output application/json&#10;---&#10;payload.items..exception..message]" />
 
-					</batch:aggregator>
+					
+</batch:aggregator>
 				</batch:step>
 				<batch:step name="batch-step-2-lb"
 					doc:id="347eb295-0968-4783-8b8f-a1b58d3de0f5"
 					acceptPolicy="ONLY_FAILURES">
-					<logger level="INFO" doc:name="Logger: payload"
-						doc:id="e08e444e-c338-4afd-8305-ecb809258e0b"
-						message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned record has errored out",&#10;	"record": payload&#10;}]' />
-				</batch:step>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="447612ed-14ca-4bba-9957-26dd99a0b25f" size="200" preserveMimeTypes="true">
+						<logger level="INFO" doc:name="Logger: payload" doc:id="e08e444e-c338-4afd-8305-ecb809258e0b" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"message": "The mentioned records have errored out",&#10;	"records": payload.*ItemID__c&#10;}]' />
+					</batch:aggregator>
+				
+</batch:step>
 
 			</batch:process-records>
 			<batch:on-complete>

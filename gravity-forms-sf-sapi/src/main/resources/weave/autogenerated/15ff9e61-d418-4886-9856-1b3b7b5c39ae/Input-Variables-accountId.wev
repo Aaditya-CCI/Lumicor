@@ -1,4 +1,0 @@
-%dw 2.0
-
-type auto_15ff9e61_d418_4886_9856_1b3b7b5c39ae_Input_Variables_accountId = String {"typeId": "Id"} | Null
-

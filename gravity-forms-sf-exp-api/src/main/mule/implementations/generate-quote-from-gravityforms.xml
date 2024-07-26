@@ -14,26 +14,138 @@ http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/em
 		<logger level="INFO" doc:name="Prinitng Payload" doc:id="1211ea3f-48ea-4bcc-8687-45a0a9f511b5" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"Message": "Recieved the data successfully from Gravity Form",&#10;	"payload": payload&#10;}]'/>
 		<ee:transform doc:name="setting payload" doc:id="c5647b01-1c19-45e9-90c6-058d8c8d469e" >
 			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="reqRes" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+}]]></ee:set-variable>
+				<ee:set-variable variableName="initialPayload" ><![CDATA[%dw 2.0
 import * from dw::util::Values
 output application/json
 fun objectify(value: Any) = 
     (value splitBy "\n\n" map ($ splitBy ":")) reduce ((item, obj ={}) -> if(sizeOf(item) > 1)(obj ++ {(item[0]): trim(item[1])})else obj ++{})
 ---
-payload update field("kuvio") with (if(payload.kuvio != "")(payload.kuvio splitBy "---" map(objectify($))) else []) update field("decor") with (if(payload.decor != "")(payload.decor splitBy "---" map(objectify($)))else [])]]></ee:set-payload>
-			</ee:message>
+payload update field("kuvio") with (if(payload.kuvio != "")(payload.kuvio splitBy "---" map(objectify($))) else []) update field("decor") with (if(payload.decor != "")(payload.decor splitBy "---" map(objectify($)))else [])]]></ee:set-variable>
+			</ee:variables>
 		</ee:transform>
-		<until-successful maxRetries="5" doc:name="Until Successful" doc:id="5a131d98-11bd-4150-ad86-44e8d5a846cf" >
-			<http:request method="${sfdc.sapi.generateQuote.method}" doc:name="Request" doc:id="de5be615-0209-4a99-bc08-2b31981200d7" config-ref="HTTP_Request_configuration" path="${sfdc.sapi.generateQuote.path}" responseTimeout="1800000">
-			<http:headers><![CDATA[#[output application/java
+		<until-successful maxRetries="5" doc:name="Until Successful" doc:id="5a131d98-11bd-4150-ad86-44e8d5a846cf">
+			<try doc:name="Try" doc:id="7ec3ca8e-1e7d-488b-b904-f4c36848f899" >
+				<http:request method="${sfdc.sapi.generateQuote.method}" doc:name="Request" doc:id="de5be615-0209-4a99-bc08-2b31981200d7" config-ref="HTTP_Request_configuration" path="${sfdc.sapi.generateQuote.path}" responseTimeout="1800000">
+			<http:body><![CDATA[#[vars.initialPayload]]]></http:body>
+				<http:headers><![CDATA[#[output application/java
 ---
 {
 	client_secret : p('secure::sfdc.sapi.client_secret'),
 	client_id : p('secure::sfdc.sapi.client_id')
 }]]]></http:headers>
 		</http:request>
+				<error-handler >
+					<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="6442f457-9e43-4735-ab22-fa1db390c4bc" type="ANY">
+						<ee:transform doc:name="Transform Message" doc:id="0bca751a-6e68-4565-8a3e-759b10116d33" >
+							<ee:message >
+							</ee:message>
+							<ee:variables >
+								<ee:set-variable variableName="reqRes" ><![CDATA[%dw 2.0
+output application/json
+---
+error.errorMessage.payload]]></ee:set-variable>
+							</ee:variables>
+						</ee:transform>
+						<logger level="INFO" doc:name="Logger" doc:id="46d2fd55-9881-4c1d-9a27-88f263d19b00" message="#[vars.reqRes]"/>
+					</on-error-propagate>
+				</error-handler>
+			</try>
 		</until-successful>
-		<logger level="INFO" doc:name="printing payload" doc:id="dc8085ee-6447-4066-b9ca-db0b7a87f286" message="#[%dw 2.0&#10;output application/json&#10;---&#10;payload]"/>
+		<async doc:name="Async: Send Email" doc:id="d0a0a43d-d671-4c36-b088-98d9b55f2d38" >
+			<ee:transform doc:name="var: emailBody" doc:id="fbbff7ce-dca5-42a8-8ef6-208f0ba16243">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="emailBody"><![CDATA[%dw 2.0
+fun getTable(data: Object) ={
+    table: {
+        tr: {
+            th: "Keys",
+            th: "Values"
+        },
+        (data mapObject ((value, key, index) -> 
+            if(typeOf(value) as String == "Object")(
+                value mapObject(
+                    if(typeOf($) as String == "Array")(
+                        tr:{
+                            td: ($$),
+                            td @("id": "secCol"): if(sizeOf($) >0)({
+                                table: {
+                                    tr: {
+                                        th: "Keys",
+                                        th: "Values"
+                                    },
+                                    ($ map ((i, id) -> {
+                                        tr: {
+                                            td: (id) as Number + 1,
+                                            td @("id": "secCol"): (i splitBy  ",") joinBy ", "
+                                        }
+                                    }))
+                                }
+                            })else(null)
+                        }
+                    )else(
+                        tr: {
+                            td: (key),
+                            td @("id": "secCol"): if(value == "")("null")else(value)
+                        }
+                    )
+                )
+            )else(
+                 tr: {
+                    td: (key),
+                    td @("id": "secCol"): if(value == "")("null")else(value)
+                }
+            )
+        ))        
+    }
+}
+
+output application/xml
+---
+{
+    "html" @("lang": "en"):{
+        "head":{
+            meta @(charset: 'UTF-8'): null,
+            meta @(name: 'viewport', content: 'width=device-width, initial-scale=1.0'): null,
+            "title": "RFQ Salesforce Opportunity Created",
+    "style": "body {\r\n      font-family: Arial, sans-serif;\r\n      color: #333;\r\n      margin: 0;\r\n      padding: 0;\r\n      background-color: #F4F4F4;\r\n    }\r\n    .container {\r\n      max-width: 600px;\r\n      margin: 20px auto;\r\n      background-color: #fff;\r\n      border-radius: 13px;\r\n      box-shadow: 0 0 10px rgba(0,0,0,0.1);\r\n      overflow-x: hidden; /* Ensures no horizontal scrollbar on the outer container */\r\n    }\r\n    .inner-container {\r\n      padding: 20px; \r\n    }\r\n    h2 {\r\n      text-align: center;\r\n      margin-top: 30px;\r\n      color: #fbb53b;\r\n      margin-bottom: 40px;\r\n    }\r\n    table {\r\n      width: 100%;\r\n      max-width: 100%;\r\n      border-collapse: collapse;\r\n      margin-bottom: 20px;\r\n      overflow-x: auto;\r\n    }\r\n    th, td {\r\n      border: 1px solid #ddd;\r\n      padding: 8px;\r\n       /* Ensures long words or URLs wrap within table cells */\r\n    }\r\n    th {\r\n      background-color: #f2f2f2;\r\n      color: #E60415;\r\n      text-align: left;\r\n    }\r\n    #secCol {\r\n      text-align: left;\r\n      word-break: break-word;\r\n    }"
+        },
+        "body":{
+            "div" @("class": "container"):{
+                "div" @("class": "inner-container"):{
+                    "h2": "RFQ Salesforce Opportunity Created",
+                    "p": "Hey Team,",
+                    "p": "The following request have been successfully converted to Opportuity and Quote in Salesforce",
+                    "br": null,
+                    "div": getTable(payload)
+                }
+            }
+        }
+    }
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+			<email:send doc:name="Send: Success Email" doc:id="f15088e5-85dd-4855-8301-ea27942fda42" subject='#["RFQ Salesforce Opportunity Created"]' config-ref="Email_SMTP1">
+				<email:to-addresses >
+					<email:to-address value="quotes@lumicor.com" />
+				</email:to-addresses>
+				<email:cc-addresses >
+					<email:cc-address value="neelduggal7777@gmail.com" />
+				</email:cc-addresses>
+				<email:body contentType="text/html" encoding="UTF-8" >
+					<email:content ><![CDATA[#[vars.emailBody]]]></email:content>
+				</email:body>
+			</email:send>
+		</async>
+		<logger level="INFO" doc:name="printing initialPayload" doc:id="dc8085ee-6447-4066-b9ca-db0b7a87f286" message="#[%dw 2.0&#10;output application/json&#10;---&#10;vars.initialPayload]"/>
 		<ee:transform doc:name="Transform Message" doc:id="46a669cf-7fc9-40fb-a2d4-6afdebfb36e8" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
@@ -50,39 +162,88 @@ payload]]></ee:set-payload>
 					</ee:message>
 					<ee:variables >
 						<ee:set-variable variableName="emailBody" ><![CDATA[%dw 2.0
-output application/xml writeDeclaration=false
+
+fun getTable(data: Object) ={
+                        table: {
+                            tr: {
+                                th: "Keys",
+                                th: "Values"
+                            },
+                            (data mapObject ((value, key, index) -> (
+                                if(typeOf(value) as String == "Array")(
+                                    tr: {
+                                        td: (key),
+                                        td @("id": "secCol"): {
+                                            table: value map {
+                                                
+                                                    tr: {
+                                                        th: "Keys",
+                                                        th: "Values"
+                                                    },
+                                                ($ mapObject ((value, key, index) -> {
+                                                    tr: {
+                                                        td: (key),
+                                                        td @("id": "secCol"): if(value == "")("null")else(value)
+                                                    }
+                                                }))
+                                            }
+                                        }
+                                    }
+                                )else(
+                                    tr: {
+                                        td: (key),
+                                        td @("id": "secCol"): if(value == "")("null")else(value)
+                                    }
+                                )
+                            )))
+                        }
+                    }
+output application/xml
 ---
 {
-    html @(lang: "en"): {
-        head: {
+    "html" @("lang": "en"):{
+        "head":{
             meta @(charset: 'UTF-8'): null,
-            meta @(name: 'viewport', content: 'width=device-width, initial-scale=1.0'): null
+            meta @(name: 'viewport', content: 'width=device-width, initial-scale=1.0'): null,
+            "title": "RFQ Salesforce Opportunity Action Required",
+    "style": "body {\r\n      font-family: Arial, sans-serif;\r\n      color: #333;\r\n      margin: 0;\r\n      padding: 0;\r\n      background-color: #F4F4F4;\r\n    }\r\n    .container {\r\n      max-width: 600px;\r\n      margin: 20px auto;\r\n      background-color: #fff;\r\n      border-radius: 13px;\r\n      box-shadow: 0 0 10px rgba(0,0,0,0.1);\r\n      overflow-x: hidden; /* Ensures no horizontal scrollbar on the outer container */\r\n    }\r\n    .inner-container {\r\n      padding: 20px; \r\n    }\r\n    h2 {\r\n      text-align: center;\r\n      margin-top: 30px;\r\n      color: #fbb53b;\r\n      margin-bottom: 40px;\r\n    }\r\n    table {\r\n      width: 100%;\r\n      max-width: 100%;\r\n      border-collapse: collapse;\r\n      margin-bottom: 20px;\r\n      overflow-x: auto;\r\n    }\r\n    th, td {\r\n      border: 1px solid #ddd;\r\n      padding: 8px;\r\n       /* Ensures long words or URLs wrap within table cells */\r\n    }\r\n    th {\r\n      background-color: #f2f2f2;\r\n      color: #E60415;\r\n      text-align: left;\r\n    }\r\n    #secCol {\r\n      text-align: left;\r\n      word-break: break-word;\r\n    }"
         },
-        body @(style: "font-family: 'Times New Roman'"): {
-            span: "Hi Team,",
-            br: "",
-            span: "Linking the file having the data of failed qoute.",
-            br: "",
-            span: "Thanks!"
+        "body":{
+            "div" @("class": "container"):{
+                "div" @("class": "inner-container"):{
+                    "h2": "RFQ Salesforce Opportunity Action Required",
+                    "p": "Hey Team,",
+                    "p": "The following request failed to convert to a Salesforce Opportunity.",
+                    "br": null,
+                    "div": getTable(vars.initialPayload),
+                    "br": null,
+                    "br": null,
+                    "h2": "Error Report",
+                    "br": null,
+                    "br": null,
+                    ("div": if(typeOf(vars.reqRes) as String == "Array") (getTable(vars.reqRes groupBy $."Object"))
+                    	else(getTable(vars.reqRes))
+                    ) if(vars.reqRes != null)
+                }
+            }
         }
     }
 }]]></ee:set-variable>
 					</ee:variables>
 				</ee:transform>
-				<email:send doc:name="Send" doc:id="758d3e1f-97b4-4199-bd56-0e170c3fe6d4" config-ref="Email_SMTP" subject="Failed Quote Info">
+				<email:send doc:name="Send: Failure Email" doc:id="758d3e1f-97b4-4199-bd56-0e170c3fe6d4" subject='#["RFQ Salesforce Opportunity Action Required"]' config-ref="Email_SMTP1">
 			<email:to-addresses >
-				<email:to-address value="neelduggal7777@gmail.com" />
+						<email:to-address value="quotes@lumicor.com" />
+
 			</email:to-addresses>
 			<email:cc-addresses >
-				<email:cc-address value="mlitvinenko@lumicor.com" />
+						<email:cc-address value="neelduggal7777@gmail.com" />
+
 			</email:cc-addresses>
 			<email:body contentType="text/html" encoding="UTF-8">
 						<email:content ><![CDATA[#[vars.emailBody]]]></email:content>
 
 			</email:body>
-			<email:attachments ><![CDATA[#[{
-	"sampleFile.json": payload
-}]]]></email:attachments>
 		</email:send>
 				<logger level="INFO" doc:name="Logger" doc:id="024fd91e-e3eb-49d4-9be4-42c2c23fbe7b" message='#["Email Sent"]'/>
 			</on-error-propagate>

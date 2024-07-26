@@ -1,290 +1,109 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
-	xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
-http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
 	<flow name="generate-opportunity-dataFlow" doc:id="15ff9e61-d418-4886-9856-1b3b7b5c39ae" >
 		<logger level="INFO" doc:name="constructing-opportunity-payload" doc:id="f2cee29f-1f13-4320-a2a8-712e93750e63" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Building opportunity payload"&#10;}]'/>
 		<logger level="INFO" doc:name="checking-architect-account" doc:id="fd92ab2b-7992-4b58-a1eb-adea8614e501" message='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "checking for specifier account(using architect company name and architect zipcode)"&#10;}]'/>
 		<salesforce:query doc:name="Lookup-account-for-opp" doc:id="a90e2fcc-ff2d-45a4-b730-a5952e306039" config-ref="Salesforce_Config" target="ArchCompany" targetValue="#[payload[0].Id]">
-							<salesforce:salesforce-query><![CDATA[select Id from Account where Name = ':architectCompany' and BillingPostalCode = ':architectZip']]></salesforce:salesforce-query>
+							<salesforce:salesforce-query><![CDATA[select Id from Account where Name = ':specifierCompany' and BillingPostalCode = ':specifierZip' and BillingState = ':specifierState']]></salesforce:salesforce-query>
 			<salesforce:parameters><![CDATA[#[{
-	"architectCompany": payload.architect_company,
-	architectZip: payload.architect_company_ZIP as Number
+	"specifierCompany": payload.architect_company,
+	specifierZip: payload.architect_company_ZIP,
+	specifierState: payload.architect_company_state
 }]]]></salesforce:parameters>
 						</salesforce:query>
-		<choice doc:name="Choice" doc:id="84f47f82-7d01-4f58-a7f0-df39b755e61e" >
-			<when expression="#[vars.ArchCompany != null]">
-				<salesforce:query doc:name="Query: Zip Assignment to get Agency" doc:id="78e69024-f5f6-4ca6-b536-590bbb118dee" config-ref="Salesforce_Config" target="repAgency" targetValue='#[payload[0].Sales_Rep_Agency__r.Id]'>
-					<salesforce:salesforce-query ><![CDATA[select Sales_Rep_Agency__r.Id, Sales_Rep_Agency__r.Name, State__c from Zip_Assignment__c where Zip__c = :specifierZIP]]></salesforce:salesforce-query>
-					<salesforce:parameters ><![CDATA[#[{
-	specifierZIP: payload.architect_company_ZIP as Number
+		<!-- [STUDIO:"Choice"]<choice doc:name="Choice" doc:id="bc420358-23af-4551-bf8f-e01136e4cea5" >
+			<when expression="#[vars.ArchCompany == null&#93;">
+				<logger level="INFO" doc:name="Logger: Create specifier account" doc:id="d25e54da-bf2b-4f0a-83af-07eeab497721" message='#["No Account found for specifier so a new specifier account is being entered"&#93;'/>
+				<ee:transform doc:name="var: accountInfo" doc:id="6901bd8d-86e6-41d8-88da-c84873ec0538">
+					<ee:message>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="accountInfo" ><![CDATA[%dw 2.0
+output application/java
+&#45;&#45;-
+[{
+	"Type": "Specifier - Architect",
+	"Name": payload.architect_company,
+	"BillingState": payload.architect_company_state,	
+	"BillingPostalCode": payload.architect_company_ZIP
+}&#93;&#93;&#93;></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<until-successful maxRetries="5" doc:name="Until Successful" doc:id="896a53c5-c65e-4cff-9fbb-d4c2f8fa5a42" millisBetweenRetries="6000">
+					<salesforce:create doc:name="Specifier Account Creation" doc:id="f4431233-eff5-4d34-b6c1-c9f509995741" config-ref="Salesforce_Config" type="Account" target="createRes">
+						<salesforce:records ><![CDATA[#[vars.accountInfo&#93;&#93;&#93;></salesforce:records>
+					</salesforce:create>
+					<validation:is-false doc:name="Is false" doc:id="dc0c0dd5-2425-4fec-a792-ed86c6303b3e" expression="#[vars.createRes.successful == false&#93;" message='#["Failed while creating a specifier Account"&#93;' />
+				</until-successful>
+				<logger level="INFO" doc:name="Logger" doc:id="788539a4-a492-4b6f-ae0c-dbba2f19f051" message='#["Specifier Account Created Successfully"&#93;'/>
+			</when>
+		</choice> [STUDIO] -->
+		<salesforce:query doc:name="Query: Zip Assignment to get Agency" doc:id="78e69024-f5f6-4ca6-b536-590bbb118dee" config-ref="Salesforce_Config" target="repAgency" targetValue="#[payload[0]]">
+					<salesforce:salesforce-query><![CDATA[select Id, Agency__r.name, Agency__c, Zip__c, City__c, Inside_Sales__c, Inside_Sales__r.name, Manager__c, Manager__r.name from Internal_Territory__c where Zip__c = :specifierZIP and Agency__c != null]]></salesforce:salesforce-query>
+					<salesforce:parameters><![CDATA[#[{
+	specifierZIP: (payload.architect_company_ZIP replace /[^0-9]/ with "") as Number
 }]]]></salesforce:parameters>
 				</salesforce:query>
-				<logger level="INFO" doc:name="Logger: To print agency ID" doc:id="aa744c73-e5b4-472c-9bee-51291c24ad43" message='#["Agency Id is :" ++ vars.repAgency as String]'/>
-				<choice doc:name="Choice" doc:id="c9c4b1bb-0fff-40cc-9918-28f8e252bceb" >
+		<logger level="INFO" doc:name="Logger: To print agency ID" doc:id="aa744c73-e5b4-472c-9bee-51291c24ad43" message='#["Agency Id is :" ++ (vars.repAgency.Sales_Rep_Agency__r.Id as String default "Not Found")]' />
+		<choice doc:name="Choice" doc:id="c9c4b1bb-0fff-40cc-9918-28f8e252bceb">
 					<when expression="#[vars.repAgency != null]">
-						<salesforce:query doc:name="Query: Internal Territory to get opportunity owner" doc:id="c29577c0-06a7-4087-a085-567fbfed91ab" config-ref="Salesforce_Config" target="opportunityOwner" targetValue='#[payload[0]."Inside_Sales__c"]'>
-							<salesforce:salesforce-query ><![CDATA[select Inside_Sales__c from Internal_Territory__c where  Agency__c = ':salesRepAgency'
-]]></salesforce:salesforce-query>
-							<salesforce:parameters ><![CDATA[#[{
-	salesRepAgency: vars.repAgency
-}]]]></salesforce:parameters>
-						</salesforce:query>
-						<ee:transform doc:name="opportunity payload" doc:id="db48d047-86c2-4424-b339-fbff4764609e" >
-							<ee:message >
-								<ee:set-payload ><![CDATA[%dw 2.0
+						<ee:transform doc:name="opportunity payload" doc:id="db48d047-86c2-4424-b339-fbff4764609e">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
-	"OwnerId": vars.opportunityOwner default "",
+	"OwnerId": vars.repAgency.Inside_Sales__c default "0051N000006Baw3QAC",
 	"Name": payload.project_name,
     "Project_Name__c": payload.project_name,
+    "LeadSource": "Website",
     "Application__c": payload.application,
     "Market_Segment__c": payload.industry,
     "CloseDate": payload.estimated_install_date as Date {format: "MM/dd/yyyy"} as String {format: "yyyy-MM-dd"},
-    "StageName": "Inquiry",
-    ("Architect_Designer_Company_Name__c": payload.architect_company) if(vars.ArchCompany == null),
-    ("Architect_Designer_Company__c": vars.ArchCompany) if(vars.ArchCompany != null),
+    "StageName": "Quote",
+    "Architect_Designer_Company__c": vars.ArchCompany,
     "Architect_Designer_State_Province__c": payload.architect_company_state,
-    "Architect_Designer__c": payload.architect_company_ZIP,
-    "Sales_Rep_Company__c": vars.repAgency default "",
-    "Commercial_Residential_or_Collect_Deli__c": payload.shipping_address_type
+    "Architect_Designer__c": (payload.architect_company_ZIP replace /[^0-9]/ with "") as Number,
+    "Architect_Designer_City__c": vars.repAgency.City__c default "",
+    "Sales_Rep_Company__c": vars.repAgency.Agency__c default "",
+    "Commercial_Residential_or_Collect_Deli__c": payload.shipping_address_type,
+    "Internal_Territory__c": vars.repAgency.Id default ""
 }]]></ee:set-payload>
 							</ee:message>
 						</ee:transform>
 					</when>
-					<otherwise >
-						<ee:transform doc:name="opportunity payload" doc:id="9fe4dd63-ff5b-490a-8391-f4ee99b098c7" >
-							<ee:message >
-								<ee:set-payload ><![CDATA[%dw 2.0
+					<otherwise>
+						<ee:transform doc:name="opportunity payload" doc:id="9fe4dd63-ff5b-490a-8391-f4ee99b098c7">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
+	//Owner Id is yet to be added
+	"OwnerId": "0051N000006Baw3QAC",
 	"Name": payload.project_name,
     "Project_Name__c": payload.project_name,
+    "LeadSource": "Website",
     "Application__c": payload.application,
     "Market_Segment__c": payload.industry,
     "CloseDate": payload.estimated_install_date as Date {format: "MM/dd/yyyy"} as String {format: "yyyy-MM-dd"},
-    "StageName": "Inquiry",
-    ("Architect_Designer_Company_Name__c": payload.architect_company) if(vars.ArchCompany == null),
-    ("Architect_Designer_Company__c": vars.ArchCompany) if(vars.ArchCompany != null),
+    "StageName": "Quote",
+    "Architect_Designer_Company__c": vars.ArchCompany,
     "Architect_Designer_State_Province__c": payload.architect_company_state,
-    "Architect_Designer__c": payload.architect_company_ZIP,
-    "Commercial_Residential_or_Collect_Deli__c": payload.shipping_address_type
+    "Architect_Designer__c": (payload.architect_company_ZIP replace /[^0-9]/ with "") as Number,
+    "Commercial_Residential_or_Collect_Deli__c": payload.shipping_address_type,
+    "Internal_Territory__c": ""
 }]]></ee:set-payload>
 							</ee:message>
 						</ee:transform>
 					</otherwise>
 				</choice>
-			</when>
-			<otherwise>
-				<ee:transform doc:name="opportunity payload" doc:id="93029e6f-f6da-444b-8d87-7887902739dd" >
-					<ee:message >
-						<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{
-	"Name": payload.project_name,
-    "Project_Name__c": payload.project_name,
-    "Application__c": payload.application,
-    "Market_Segment__c": payload.industry,
-    "CloseDate": payload.estimated_install_date as Date {format: "MM/dd/yyyy"} as String {format: "yyyy-MM-dd"},
-    "StageName": "Inquiry",
-    ("Architect_Designer_Company_Name__c": payload.architect_company) if(vars.ArchCompany == null),
-    ("Architect_Designer_Company__c": vars.ArchCompany) if(vars.ArchCompany != null),
-    "Architect_Designer_State_Province__c": payload.architect_company_state,
-    "Architect_Designer__c": payload.architect_company_ZIP,
-    "Commercial_Residential_or_Collect_Deli__c": payload.shipping_address_type
-}]]></ee:set-payload>
-					</ee:message>
-				</ee:transform>
-			</otherwise>
-		</choice>
-		<!-- [STUDIO:"opportunity payload"]<ee:transform doc:name="opportunity payload" doc:id="83557e39-045f-4535-bf35-616af3ca4eb4">
-					<ee:message>
-						<ee:set-payload><![CDATA[%dw 2.0
-output application/json
-&#45;&#45;-
-{
-	"Name": payload.project_name,
-    "Project_Name__c": payload.project_name,
-    "Application__c": payload.application,
-    "Market_Segment__c": payload.industry,
-    "CloseDate": payload.estimated_install_date as Date {format: "MM/dd/yyyy"} as String {format: "yyyy-MM-dd"},
-    "StageName": "Inquiry",
-    ("Architect_Designer_Company_Name__c": payload.architect_company) if(vars.ArchCompany == null),
-    ("Architect_Designer_Company__c": vars.ArchCompany) if(vars.ArchCompany != null),
-    "Architect_Designer_State_Province__c": payload.architect_company_state,
-    "Architect_Designer__c": payload.architect_company_ZIP,
-    "Commercial_Residential_or_Collect_Deli__c": payload.shipping_address_type
-}&#93;&#93;></ee:set-payload>
-					</ee:message>
-				</ee:transform> [STUDIO] -->
-		<!-- [STUDIO:"Choice"]<choice doc:name="Choice" doc:id="ec7650dd-76f5-4674-9887-5941416add13" >
-			<when expression='#[payload.cb_local_sales_rep != ""&#93;'>
-				<logger level="INFO" doc:name="using-existing-sales-rep-info" doc:id="f2621561-ea52-431f-829b-01a250646b4a" message='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Using passed saes rep info to find account"&#10;}&#93;'/>
-				<salesforce:query doc:name="Lookup-contact-for-opp" doc:id="1ceb3281-2ca1-4ba3-87a4-9c497465682b" config-ref="Salesforce_Config" target="lookupContact" targetValue="#[payload[0&#93;.AccountId&#93;" readTimeoutUnit="HOURS">
-							<salesforce:salesforce-query><![CDATA[SELECT AccountId FROM Contact WHERE Name = ':RepName'   And  Email = ':RepEmail' And Account.Name  =  ':CmpnyName'&#93;&#93;></salesforce:salesforce-query>
-					<salesforce:parameters ><![CDATA[#[{
-	"RepName": payload.sales_rep_name,
-	"RepEmail": payload.sales_rep_email,
-	"CmpnyName": payload.sales_rep_company
-}&#93;&#93;&#93;></salesforce:parameters>
-						</salesforce:query>
-				<choice doc:name="Choice" doc:id="2fc321e8-6ec8-4dd3-8ba0-c697e4fa3150" >
-					<when expression="#[vars.lookupContact != null&#93;">
-						<ee:transform doc:name="Transform Message" doc:id="4f61682b-1f05-4f3a-b994-16870b8e9617">
-			<ee:message>
-				<ee:set-payload><![CDATA[%dw 2.0
-output application/json
-&#45;&#45;-
-{
-	"Name": payload.project_name,
-    "Project_Name__c": payload.project_name,
-    "Application__c": payload.application,
-    "Market_Segment__c": payload.industry,
-    "CloseDate": payload.estimated_install_date as Date {format: "MM/dd/yyyy"} as String {format: "yyyy-MM-dd"},
-    "StageName": "Inquiry",
-    ("Architect_Designer_Company_Name__c": payload.architect_company) if(vars.ArchCompany == null),
-    ("Architect_Designer_Company__c": vars.ArchCompany) if(vars.ArchCompany != null),
-    "Architect_Designer_State_Province__c": payload.architect_company_state,
-    "Architect_Designer__c": payload.architect_company_ZIP,
-    "In_contact_with_local_Sales_Rep__c": if(payload.cb_local_sales_rep != "") "Yes" else "No",
-    "Sales_Rep_Company__c": vars.lookupContact, 
-    "Commercial_Residential_or_Collect_Deli__c": payload.shipping_address_type
-}&#93;&#93;></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-					</when>
-					<otherwise >
-						<logger level="INFO" doc:name="using-zip-code-to-find-sales-rep" doc:id="c245551c-63b3-4da3-84a1-00ab08ecf0dd" message='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Using sales zip code to find sales rep"&#10;}&#93;'/>
-						<salesforce:query doc:name="Qurey UsingZip code on contact" doc:id="6f6c097e-ee7d-4158-ab88-126aa04e0950" config-ref="Salesforce_Config" target="salesRepAccountId" targetValue="#[payload[0&#93;.AccountId&#93;" >
-							<salesforce:salesforce-query ><![CDATA[select AccountId, Id  from Contact where Sales_Rep_Zip__c = ':salesRepZip'&#93;&#93;></salesforce:salesforce-query>
-							<salesforce:parameters ><![CDATA[#[{
-	"salesRepZip": payload.shipping_address_zip
-}&#93;&#93;&#93;></salesforce:parameters>
-						</salesforce:query>
-						<choice doc:name="Choice" doc:id="942d18d7-84bf-4e85-a44f-2e2e9a32f891" >
-							<when expression="#[vars.salesRepAccountId != null&#93;" >
-								<ee:transform doc:name="Transform Message" doc:id="a6207fa9-28b6-4554-9199-7d0af291a784" >
-									<ee:message >
-										<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
-&#45;&#45;-
-{
-	"Name": payload.project_name,
-    "Project_Name__c": payload.project_name,
-    "Application__c": payload.application,
-    "Market_Segment__c": payload.industry,
-    "CloseDate": payload.estimated_install_date as Date {format: "MM/dd/yyyy"} as String {format: "yyyy-MM-dd"},
-    "StageName": "Inquiry",
-    ("Architect_Designer_Company_Name__c": payload.architect_company) if(vars.ArchCompany == null),
-    ("Architect_Designer_Company__c": vars.ArchCompany) if(vars.ArchCompany != null),
-    "Architect_Designer_State_Province__c": payload.architect_company_state,
-    "Architect_Designer__c": payload.architect_company_ZIP,
-    "In_contact_with_local_Sales_Rep__c": if(payload.cb_local_sales_rep != "") "Yes" else "No",
-    "Sales_Rep_Company__c": vars.salesRepAccountId default "", 
-    "Commercial_Residential_or_Collect_Deli__c": payload.shipping_address_type
-}&#93;&#93;></ee:set-payload>
-									</ee:message>
-								</ee:transform>
-							</when>
-							<otherwise >
-								<ee:transform doc:name="tbu" doc:id="77168d1d-e8a0-4625-bbf6-959982d731d5" >
-									<ee:message >
-										<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
-&#45;&#45;-
-{
-	"Name": payload.project_name,
-    "Project_Name__c": payload.project_name,
-    "Application__c": payload.application,
-    "Market_Segment__c": payload.industry,
-    "CloseDate": payload.estimated_install_date as Date {format: "MM/dd/yyyy"} as String {format: "yyyy-MM-dd"},
-    "StageName": "Inquiry",
-    ("Architect_Designer_Company_Name__c": payload.architect_company) if(vars.ArchCompany == null),
-    ("Architect_Designer_Company__c": vars.ArchCompany) if(vars.ArchCompany != null),
-    "Architect_Designer_State_Province__c": payload.architect_company_state,
-    "Architect_Designer__c": payload.architect_company_ZIP,
-    "In_contact_with_local_Sales_Rep__c": if(payload.cb_local_sales_rep != "") "Yes" else "No",
-//    "Sales_Rep_Company__c": vars.salesRepAccountId default "",
-    "Commercial_Residential_or_Collect_Deli__c": payload.shipping_address_type
-}
-&#93;&#93;></ee:set-payload>
-									</ee:message>
-								</ee:transform>
-							</otherwise>
-						</choice>
-					
-</otherwise>
-				</choice>
-			
-</when>
-			<otherwise >
-				<logger level="INFO" doc:name="using-zip-to-find-sales-rep" doc:id="72a54465-025c-4260-9cf7-5cf06a5d5546" message='#[%dw 2.0&#10;output application/json&#10;&#45;&#45;-&#10;{&#10;	"correlationId": vars.coID,&#10;	"message": "Using Zip code to find sales rep when sales rep info is not passed"&#10;}&#93;'/>
-				<salesforce:query doc:name="Qurey UsingZip code on contact" doc:id="c88a6572-f97c-466c-9ac6-58502a7e4183" config-ref="Salesforce_Config" target="salesRepAccountId" targetValue="#[payload[0&#93;.AccountId&#93;">
-									<salesforce:salesforce-query><![CDATA[select AccountId, Id  from Contact where Sales_Rep_Zip__c = ':salesRepZip'&#93;&#93;></salesforce:salesforce-query>
-									<salesforce:parameters><![CDATA[#[{
-	"salesRepZip": payload.shipping_address_zip
-}&#93;&#93;&#93;></salesforce:parameters>
-								</salesforce:query>
-						<choice doc:name="Choice" doc:id="e9c7dc78-8290-49fb-a136-2a2a83efa79d" >
-							<when expression="#[vars.salesRepAccountId != null&#93;">
-								<ee:transform doc:name="Transform Message" doc:id="374a42d1-d997-4810-9701-9ee4ecbeb115">
-							<ee:message>
-								<ee:set-payload><![CDATA[%dw 2.0
-output application/json
-&#45;&#45;-
-{
-	"Name": payload.project_name,
-    "Project_Name__c": payload.project_name,
-    "Application__c": payload.application,
-    "Market_Segment__c": payload.industry,
-    "CloseDate": payload.estimated_install_date as Date {format: "MM/dd/yyyy"} as String {format: "yyyy-MM-dd"},
-    "StageName": "Inquiry",
-    ("Architect_Designer_Company_Name__c": payload.architect_company) if(vars.ArchCompany == null),
-    ("Architect_Designer_Company__c": vars.ArchCompany) if(vars.ArchCompany != null),
-    "Architect_Designer_State_Province__c": payload.architect_company_state,
-    "Architect_Designer__c": payload.architect_company_ZIP,
-    "In_contact_with_local_Sales_Rep__c": if(payload.cb_local_sales_rep != "") "Yes" else "No",
-    "Sales_Rep_Company__c": vars.salesRepAccountId default "", 
-    "Commercial_Residential_or_Collect_Deli__c": payload.shipping_address_type
-}&#93;&#93;></ee:set-payload>
-							</ee:message>
-						</ee:transform>
-							</when>
-							<otherwise >
-								<ee:transform doc:name="tbu" doc:id="6f2c20a8-e017-47fd-9de6-8eb2e3b846d8" >
-									<ee:message >
-										<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
-&#45;&#45;-
-{
-	"Name": payload.project_name,
-    "Project_Name__c": payload.project_name,
-    "Application__c": payload.application,
-    "Market_Segment__c": payload.industry,
-    "CloseDate": payload.estimated_install_date as Date {format: "MM/dd/yyyy"} as String {format: "yyyy-MM-dd"},
-    "StageName": "Inquiry",
-    ("Architect_Designer_Company_Name__c": payload.architect_company) if(vars.ArchCompany == null),
-    ("Architect_Designer_Company__c": vars.ArchCompany) if(vars.ArchCompany != null),
-    "Architect_Designer_State_Province__c": payload.architect_company_state,
-    "Architect_Designer__c": payload.architect_company_ZIP,
-    "In_contact_with_local_Sales_Rep__c": if(payload.cb_local_sales_rep != "") "Yes" else "No",
-//    "Sales_Rep_Company__c": vars.salesRepAccountId default "",
-    "Commercial_Residential_or_Collect_Deli__c": payload.shipping_address_type
-}
-&#93;&#93;></ee:set-payload>
-									</ee:message>
-								</ee:transform>
-							</otherwise>
-						</choice>
-			
-</otherwise>
-		</choice> [STUDIO] -->
 		<error-handler ref="z-common-error-handler-flow" />
 	</flow>
 </mule>

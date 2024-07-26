@@ -20,13 +20,12 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
 		<secure-properties:encrypt algorithm="Blowfish" />
 	</secure-properties:config>
 	<salesforce-composite:composite-config name="Salesforce_Composite_Config" doc:name="Salesforce Composite Config" doc:id="241cda60-56e5-45fd-83bf-af35d2508ce2" >
-		<salesforce-composite:oauth-user-pass-connection consumerKey="${secure::salesforceComposite.client_id}" consumerSecret="${secure::salesforceComposite.client_secret}" username="${salesforceComposite.username}" password="${secure::salesforceComposite.password}" securityToken="${secure::salesforceComposite.securityToken}" tokenEndpoint="${salesforceComposite.link}" />
+		<salesforce-composite:oauth-user-pass-connection consumerKey="${secure::salesforceComposite.client_id}" consumerSecret="${secure::salesforceComposite.client_secret}" username="${salesforceComposite.username}" password="${secure::salesforceComposite.password}" securityToken="${secure::salesforceComposite.securityToken}" tokenEndpoint="${salesforceComposite.link}" responseTimeout="2" responseTimeoutUnit="MINUTES"/>
 	</salesforce-composite:composite-config>
 	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="7d5f0fa3-bbd1-4d6f-835b-3a2d924d399f" >
 		<salesforce:oauth-user-pass-connection consumerKey="${secure::salesforceComposite.client_id}" consumerSecret="${secure::salesforceComposite.client_secret}" username="${salesforceComposite.username}" password="${secure::salesforceComposite.password}" securityToken="${secure::salesforceComposite.securityToken}" tokenEndpoint="${salesforceComposite.link}" />
 	</salesforce:sfdc-config>
-	<!--  <api-gateway:autodiscovery apiId="19408279" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="116a88db-abaf-4876-9109-483a55547ed3" flowRef="gravityforms-sfdc-sys-api-main" />-->
 	<configuration-properties doc:name="Configuration properties" doc:id="cf6412b0-d523-44d4-9025-c6766d1aeb0e" file="properties\common-config.yaml" />
-	<api-gateway:autodiscovery apiId="19599701" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="60dfccdd-8bca-42ac-8fc7-f5757329ee40" flowRef="gravityforms-sfdc-sys-api-main" />
+	<!-- <api-gateway:autodiscovery apiId="19408279" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="60dfccdd-8bca-42ac-8fc7-f5757329ee40" flowRef="gravityforms-sfdc-sys-api-main" />--> 
 	
 </mule>

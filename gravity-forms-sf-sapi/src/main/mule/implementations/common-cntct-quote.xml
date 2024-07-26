@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:salesforce-composite="http://www.mulesoft.org/schema/mule/salesforce-composite"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/salesforce-composite http://www.mulesoft.org/schema/mule/salesforce-composite/current/mule-salesforce-composite.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="common-cntct-quoteFlow" doc:id="73a6aafe-e49b-4581-a83b-2081e16d7438" >
+		<salesforce:query doc:name="check-exisiting-billing-account" doc:id="03fbd61e-9fb2-47af-92ab-d8e5e1c644a8" config-ref="Salesforce_Config" target="existingBillingAccID" targetValue="#[payload[0].Id]" >
+			<reconnect />
+			<salesforce:salesforce-query ><![CDATA[select Id, Name from Account where Name = ':name' and BillingCity = ':city' and BillingState = ':state' and BillingPostalCode = ':zip']]></salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[{
+	"name": payload.billing_info_company_name,
+	"city": payload.billing_address_city,
+	"state": payload.billing_address_state,
+	"zip": payload.billing_address_zip
+}]]]></salesforce:parameters>
+		</salesforce:query>
+		<choice doc:name="Choice" doc:id="ff11b776-bdb4-4d82-918f-e07323af5d7e" >
+			<when expression="#[vars.existingBillingAccID != null]" >
+				<logger level="INFO" doc:name="Logger: account exists" doc:id="040fb38b-cf92-4a72-8f81-e50c6bc812bf" message='#["The account with the information  passed exists in salesforce"]' />
+				<salesforce:query doc:name="check-existing-billing-contact" doc:id="222cd5df-30fb-4726-b8af-e50e6f9d8251" config-ref="Salesforce_Config" target="existingBillingContactID" targetValue="#[payload[0].Id]" >
+					<salesforce:salesforce-query ><![CDATA[select Id from Contact where Name = ':name' and Email = ':email' and AccountId = ':accId']]></salesforce:salesforce-query>
+					<salesforce:parameters ><![CDATA[#[{
+	"name": payload.billing_info_contact_name,
+	"email": payload.billing_info_contact_email,
+	"accId": vars.existingBillingAccID
+}]]]></salesforce:parameters>
+				</salesforce:query>
+				<choice doc:name="Choice" doc:id="96d7add3-bb1f-4dbf-8507-e1d54a6a7d9d" >
+					<when expression="#[vars.existingBillingContactID != null]" >
+						<ee:transform doc:name="var: billAcc, billContact" doc:id="a7b24c0d-8817-43dc-aace-98a5520ad0ac">
+							<ee:message>
+							</ee:message>
+							<ee:variables >
+								<ee:set-variable variableName="billAcc" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"BillAccID": vars.existingBillingAccID
+}]]></ee:set-variable>
+								<ee:set-variable variableName="billContact" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"BillContactID": vars.existingBillingContactID
+}]]></ee:set-variable>
+							</ee:variables>
+						</ee:transform>
+					</when>
+					<otherwise >
+						<ee:transform doc:name="var: billAcc, billContact" doc:id="2f039ffa-734e-4e0f-a43b-65e31be8abac">
+							<ee:message>
+							</ee:message>
+							<ee:variables >
+								<ee:set-variable variableName="billAcc" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"BillAccID": vars.existingBillingAccID
+}]]></ee:set-variable>
+								<ee:set-variable variableName="billContact" ><![CDATA[%dw 2.0
+output application/json
+var nameSize = sizeOf(payload.billing_info_contact_name splitBy " ")
+var fName = if(nameSize == 1)("")
+	else ((payload.billing_info_contact_name splitBy(" "))[0] default "")
+var lName = if(nameSize == 1)(payload.billing_info_contact_name)
+	else ((payload.billing_info_contact_name splitBy(" ")) -- [fName] joinBy " " default "")
+---
+{
+	"BillContactID": vars.existingBillingContactID,
+	"AccountId": vars.existingBillingAccID,
+    "FirstName": fName,
+    "LastName": lName,
+    "Email": payload.billing_info_contact_email,
+    "Phone": payload.billing_info_contact_phone,
+    "Fax": payload.billing_info_contact_fax
+}]]></ee:set-variable>
+							</ee:variables>
+						</ee:transform>
+					</otherwise>
+				</choice>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="var: billAcc, billContact" doc:id="af53bf5e-d515-49b2-8a1d-b17b54d3cd95">
+					<ee:message>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="billAcc" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"BillAccID": vars.existingBillingAccID,
+    "Name": payload.billing_info_company_name,
+    "Type": "End User",
+//    "ShippingStreet": payload.shipping_address_street_address ++ " " ++ payload.shipping_address_line2,
+//    "ShippingCity": payload.shipping_address_city,
+//    "ShippingState": payload.shipping_address_state,
+//    "ShippingPostalCode": payload.shipping_address_zip,
+//    "ShippingCountry": payload.shipping_address_country,
+//    "Special_Shipping_Instructions__c": payload.shipping_info_special_instructions,
+    "Billing_Company_Name__c": payload.billing_info_company_name,
+    "Billing_Contact_Name__c": payload.billing_info_contact_name,
+    "Billing_Email__c": payload.billing_info_contact_email,
+    "Billing_Phone__c": payload.billing_info_contact_phone, // Needs improvemnet
+    "Billing_Fax__c": payload.billing_info_contact_fax,
+    "BillingStreet": (payload.billing_address_street_address ++ " " ++ payload.billing_address_line2),
+    "BillingCity": payload.billing_address_city,
+    "BillingState": payload.billing_address_state,
+    "BillingPostalCode": payload.billing_address_zip,
+    "BillingCountry": payload.billing_address_country 
+}]]></ee:set-variable>
+						<ee:set-variable variableName="billContact" ><![CDATA[%dw 2.0
+output application/json
+var nameSize = sizeOf(payload.billing_info_contact_name splitBy " ")
+var fName = if(nameSize == 1)("")
+	else ((payload.billing_info_contact_name splitBy(" "))[0] default "")
+var lName = if(nameSize == 1)(payload.billing_info_contact_name)
+	else ((payload.billing_info_contact_name splitBy(" ")) -- [fName] joinBy " " default "")
+---
+{
+	"BillContactID": vars.existingBillingContactID,
+	"AccountId": "@{refBillingAccount.id}",
+    "FirstName": fName,
+    "LastName": lName,
+    "Email": payload.billing_info_contact_email,
+    "Phone": payload.billing_info_contact_phone,
+    "Fax": payload.billing_info_contact_fax
+}]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>
