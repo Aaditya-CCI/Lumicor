@@ -7,9 +7,9 @@ http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mu
 http://www.mulesoft.org/schema/mule/salesforce-composite http://www.mulesoft.org/schema/mule/salesforce-composite/current/mule-salesforce-composite.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 	<flow name="common-cntct-quoteFlow" doc:id="73a6aafe-e49b-4581-a83b-2081e16d7438" >
-		<salesforce:query doc:name="check-exisiting-billing-account" doc:id="03fbd61e-9fb2-47af-92ab-d8e5e1c644a8" config-ref="Salesforce_Config" target="existingBillingAccID" targetValue="#[payload[0].Id]" >
+		<salesforce:query doc:name="check-exisiting-billing-account" doc:id="03fbd61e-9fb2-47af-92ab-d8e5e1c644a8" config-ref="Salesforce_Config" target="existingBillingAccID">
 			<reconnect />
-			<salesforce:salesforce-query ><![CDATA[select Id, Name from Account where Name = ':name' and BillingCity = ':city' and BillingState = ':state' and BillingPostalCode = ':zip']]></salesforce:salesforce-query>
+			<salesforce:salesforce-query ><![CDATA[select Id, Name from Account where Name = ':name' and BillingCity = ':city' and BillingState = ':state' and BillingPostalCode = ':zip' ]]></salesforce:salesforce-query>
 			<salesforce:parameters ><![CDATA[#[{
 	"name": payload.billing_info_company_name,
 	"city": payload.billing_address_city,
@@ -18,14 +18,14 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 }]]]></salesforce:parameters>
 		</salesforce:query>
 		<choice doc:name="Choice" doc:id="ff11b776-bdb4-4d82-918f-e07323af5d7e" >
-			<when expression="#[vars.existingBillingAccID != null]" >
+			<when expression="#[sizeOf(vars.existingBillingAccID) &gt; 0]" >
 				<logger level="INFO" doc:name="Logger: account exists" doc:id="040fb38b-cf92-4a72-8f81-e50c6bc812bf" message='#["The account with the information  passed exists in salesforce"]' />
 				<salesforce:query doc:name="check-existing-billing-contact" doc:id="222cd5df-30fb-4726-b8af-e50e6f9d8251" config-ref="Salesforce_Config" target="existingBillingContactID" targetValue="#[payload[0].Id]" >
 					<salesforce:salesforce-query ><![CDATA[select Id from Contact where Name = ':name' and Email = ':email' and AccountId = ':accId']]></salesforce:salesforce-query>
 					<salesforce:parameters ><![CDATA[#[{
 	"name": payload.billing_info_contact_name,
 	"email": payload.billing_info_contact_email,
-	"accId": vars.existingBillingAccID
+	"accId": vars.existingBillingAccID[0].Id
 }]]]></salesforce:parameters>
 				</salesforce:query>
 				<choice doc:name="Choice" doc:id="96d7add3-bb1f-4dbf-8507-e1d54a6a7d9d" >
@@ -38,7 +38,8 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 output application/json
 ---
 {
-	"BillAccID": vars.existingBillingAccID
+	"BillAccID": vars.existingBillingAccID[0].Id,
+	"BillAcc_cb": true
 }]]></ee:set-variable>
 								<ee:set-variable variableName="billContact" ><![CDATA[%dw 2.0
 output application/json
@@ -58,7 +59,8 @@ output application/json
 output application/json
 ---
 {
-	"BillAccID": vars.existingBillingAccID
+	"BillAccID": vars.existingBillingAccID[0].Id,
+	"BillAcc_cb": true
 }]]></ee:set-variable>
 								<ee:set-variable variableName="billContact" ><![CDATA[%dw 2.0
 output application/json
@@ -70,7 +72,7 @@ var lName = if(nameSize == 1)(payload.billing_info_contact_name)
 ---
 {
 	"BillContactID": vars.existingBillingContactID,
-	"AccountId": vars.existingBillingAccID,
+	"AccountId": vars.existingBillingAccID[0].Id,
     "FirstName": fName,
     "LastName": lName,
     "Email": payload.billing_info_contact_email,
@@ -91,7 +93,7 @@ var lName = if(nameSize == 1)(payload.billing_info_contact_name)
 output application/json
 ---
 {
-	"BillAccID": vars.existingBillingAccID,
+	"BillAccID": vars.existingBillingAccID[0].Id,
     "Name": payload.billing_info_company_name,
     "Type": "End User",
 //    "ShippingStreet": payload.shipping_address_street_address ++ " " ++ payload.shipping_address_line2,
@@ -109,7 +111,8 @@ output application/json
     "BillingCity": payload.billing_address_city,
     "BillingState": payload.billing_address_state,
     "BillingPostalCode": payload.billing_address_zip,
-    "BillingCountry": payload.billing_address_country 
+    "BillingCountry": payload.billing_address_country,
+    "Bill_To_Location__c": true
 }]]></ee:set-variable>
 						<ee:set-variable variableName="billContact" ><![CDATA[%dw 2.0
 output application/json

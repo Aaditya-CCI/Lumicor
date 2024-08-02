@@ -1,55 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+<mule
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
 	xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
-	<flow name="common-shipping-acc-cntctFlow" doc:id="3ad6c5e1-c07c-468c-a93a-8045c95961e8" >
-		<salesforce:query doc:name="check-exisiting-shipping-account" doc:id="367d8438-d9df-4ee4-bf17-f7a7b9edb786" config-ref="Salesforce_Config" target="existingShippingAccID" targetValue="#[payload[0].Id]" >
+	<flow name="common-shipping-acc-cntctFlow"
+		doc:id="3ad6c5e1-c07c-468c-a93a-8045c95961e8">
+		<salesforce:query
+			doc:name="check-exisiting-shipping-account"
+			doc:id="367d8438-d9df-4ee4-bf17-f7a7b9edb786"
+			config-ref="Salesforce_Config" target="existingShippingAccID">
 			<reconnect />
-			<salesforce:salesforce-query ><![CDATA[select Id, Name from Account where Name = ':name' and ShippingCity = ':city' and ShippingState = ':state' and ShippingPostalCode = ':zip']]></salesforce:salesforce-query>
-			<salesforce:parameters ><![CDATA[#[{
+			<salesforce:salesforce-query><![CDATA[select Id, Name from Account where Name = ':name' and ShippingCity = ':city' and ShippingState = ':state' and ShippingPostalCode = ':zip']]></salesforce:salesforce-query>
+			<salesforce:parameters><![CDATA[#[{
 	"name": payload.shipping_info_company_name,
 	"city": payload.shipping_address_city,
 	"state": payload.shipping_address_state,
 	"zip": payload.shipping_address_zip
 }]]]></salesforce:parameters>
 		</salesforce:query>
-		<choice doc:name="Choice" doc:id="b90b7252-b3a9-4b97-9db1-8a688b5e3fbc" >
-			<when expression="#[vars.existingShippingAccID != null]" >
-				<logger level="INFO" doc:name="Logger: account exists" doc:id="c86245bd-4ae3-4d7d-81a6-3c7c653c66f0" message='#["The shipping account with the information  passed exists in salesforce"]' />
-				<salesforce:query doc:name="check-existing-shipping-contact" doc:id="0645b4ad-df90-479a-a8a3-8e9ed45802af" config-ref="Salesforce_Config" target="existingShippingContactID" targetValue="#[payload[0].Id]" >
-					<salesforce:salesforce-query ><![CDATA[select Id from Contact where Name = ':name' and Email = ':email' and AccountId = ':accId']]></salesforce:salesforce-query>
-					<salesforce:parameters ><![CDATA[#[{
+		<choice doc:name="Choice"
+			doc:id="b90b7252-b3a9-4b97-9db1-8a688b5e3fbc">
+			<when expression="#[sizeOf(vars.existingShippingAccID) &gt; 0]">
+				<logger level="INFO" doc:name="Logger: account exists"
+					doc:id="c86245bd-4ae3-4d7d-81a6-3c7c653c66f0"
+					message='#["The shipping account with the information  passed exists in salesforce"]' />
+				<salesforce:query
+					doc:name="check-existing-shipping-contact"
+					doc:id="0645b4ad-df90-479a-a8a3-8e9ed45802af"
+					config-ref="Salesforce_Config" target="existingShippingContactID"
+					targetValue="#[payload[0].Id]">
+					<salesforce:salesforce-query><![CDATA[select Id from Contact where Name = ':name' and Email = ':email' and AccountId = ':accId']]></salesforce:salesforce-query>
+					<salesforce:parameters><![CDATA[#[{
 	"name": payload.shipping_info_contact_name,
 	"email": payload.shipping_info_contact_email,
-	"accId": vars.existingShippingAccID
+	"accId": vars.existingShippingAccID[0].Id
 }]]]></salesforce:parameters>
 				</salesforce:query>
-				<choice doc:name="Choice" doc:id="02202696-f6d6-4199-bf2b-1ceb8c81bb4b" >
-					<when expression="#[vars.existingShippingContactID != null]" >
-						<ee:transform doc:name="var: shipAcc, shipContact" doc:id="15bcdc6f-7502-481f-ade6-9372b3bcceea" >
+				<choice doc:name="Choice"
+					doc:id="02202696-f6d6-4199-bf2b-1ceb8c81bb4b">
+					<when expression="#[vars.existingShippingContactID != null]">
+						<ee:transform doc:name="var: shipAcc, shipContact"
+							doc:id="15bcdc6f-7502-481f-ade6-9372b3bcceea">
 							<ee:message />
-							<ee:variables >
-								<ee:set-variable variableName="shipContact" ><![CDATA[%dw 2.0
-output application/java
----
-{
-}]]></ee:set-variable>
-								<ee:set-variable variableName="shipAcc" ><![CDATA[%dw 2.0
+							<ee:variables>
+
+								<ee:set-variable variableName="shipAcc"><![CDATA[%dw 2.0
 output application/json
 ---
 {
-	"ShipAccID": vars.existingShippingAccID
+	"ShipAccID": vars.existingShippingAccID[0].Id,
+	"ShipAcc_cb": true
 }]]></ee:set-variable>
-								<ee:set-variable variableName="shipAcc" ><![CDATA[%dw 2.0
-output application/json
----
-{
-	"ShipAccID": vars.existingShippingAccID
-}]]></ee:set-variable>
-								<ee:set-variable variableName="shipContact" ><![CDATA[%dw 2.0
+
+								<ee:set-variable variableName="shipContact"><![CDATA[%dw 2.0
 output application/json
 ---
 {
@@ -58,11 +67,12 @@ output application/json
 							</ee:variables>
 						</ee:transform>
 					</when>
-					<otherwise >
-						<ee:transform doc:name="var: shipAcc, shipContact" doc:id="9227a630-94a5-4f36-86ca-122dccd3d21b" >
+					<otherwise>
+						<ee:transform doc:name="var: shipAcc, shipContact"
+							doc:id="9227a630-94a5-4f36-86ca-122dccd3d21b">
 							<ee:message />
-							<ee:variables >
-								<ee:set-variable variableName="shipContact" ><![CDATA[%dw 2.0
+							<ee:variables>
+								<ee:set-variable variableName="shipContact"><![CDATA[%dw 2.0
 output application/json
 var nameSize = sizeOf(payload.shipping_info_contact_name splitBy " ")
 var fName = if(nameSize == 1)("")
@@ -72,75 +82,52 @@ var lName = if(nameSize == 1)(payload.shipping_info_contact_name)
 ---
 {
 	"ShipContactID": vars.existingShippingContactID,
-	"AccountId": vars.existingShippingAccID,
+	"AccountId": vars.existingShippingAccID[0].Id,
     "FirstName": fName,
     "LastName": lName,
     "Email": payload.shipping_info_contact_email,
     "Phone": payload.shipping_info_contact_phone,
     "Fax": payload.shipping_info_contact_fax
 }]]></ee:set-variable>
-								<ee:set-variable variableName="shipAcc" ><![CDATA[%dw 2.0
+								<ee:set-variable variableName="shipAcc"><![CDATA[%dw 2.0
 output application/json
 ---
 {
-	"ShipAccID": vars.existingShippingAccID
+	"ShipAccID": vars.existingShippingAccID[0].Id,
+	"ShipAcc_cb": true
 }]]></ee:set-variable>
 							</ee:variables>
 						</ee:transform>
 					</otherwise>
 				</choice>
 			</when>
-			<otherwise >
-				<ee:transform doc:name="var: shipAcc, shipContact" doc:id="3c2f3711-a63a-47a8-9445-51176f3c2e08" >
+			<otherwise>
+				<ee:transform doc:name="var: shipAcc, shipContact"
+					doc:id="3c2f3711-a63a-47a8-9445-51176f3c2e08">
 					<ee:message />
-					<ee:variables >
-						<ee:set-variable variableName="shipContact" ><![CDATA[%dw 2.0
-output application/java
----
-{
-}]]></ee:set-variable>
-						<ee:set-variable variableName="shipAcc" ><![CDATA[%dw 2.0
+					<ee:variables>
+
+						<ee:set-variable variableName="shipAcc"><![CDATA[%dw 2.0
 output application/json
 ---
 {
-	"BillAccID": vars.existingBillingAccID,
-    "Name": payload.billing_info_company_name,
-    "Type": "End User",
-//    "ShippingStreet": payload.shipping_address_street_address ++ " " ++ payload.shipping_address_line2,
-//    "ShippingCity": payload.shipping_address_city,
-//    "ShippingState": payload.shipping_address_state,
-//    "ShippingPostalCode": payload.shipping_address_zip,
-//    "ShippingCountry": payload.shipping_address_country,
-//    "Special_Shipping_Instructions__c": payload.shipping_info_special_instructions,
-    "Billing_Company_Name__c": payload.billing_info_company_name,
-    "Billing_Contact_Name__c": payload.billing_info_contact_name,
-    "Billing_Email__c": payload.billing_info_contact_email,
-    "Billing_Phone__c": payload.billing_info_contact_phone, // Needs improvemnet
-    "Billing_Fax__c": payload.billing_info_contact_fax,
-    "BillingStreet": (payload.billing_address_street_address ++ " " ++ payload.billing_address_line2),
-    "BillingCity": payload.billing_address_city,
-    "BillingState": payload.billing_address_state,
-    "BillingPostalCode": payload.billing_address_zip,
-    "BillingCountry": payload.billing_address_country 
-}]]></ee:set-variable>
-						<ee:set-variable variableName="shipAcc" ><![CDATA[%dw 2.0
-output application/json
----
-{
-	"ShipAccID": vars.existingShippingAccID,
+	"ShipAccID": vars.existingShippingAccID[0].Id,
     "Name": payload.shipping_info_company_name,
     "Type": "End User",
-    "Shipping_Contact_Name__c": payload.shipping_info_contact_name,
-    "Email__c": payload.shipping_info_contact_email,
-    "Phone": payload.shipping_info_contact_phone, // Needs improvemnet
-    "Fax": payload.shipping_info_contact_fax,
-    "ShippingStreet": (payload.shipping_address_street_address ++ " " ++ payload.shipping_address_line2),
-    "ShippingCity": payload.shipping_address_city,
-    "ShippingState": payload.shipping_address_state,
-    "ShippingPostalCode": payload.shipping_address_zip,
-    "ShippingCountry": payload.shipping_address_country 
+    "Billing_Company_Name__c": payload.shipping_info_company_name,
+    "Billing_Contact_Name__c": payload.shipping_info_contact_name,
+    "Billing_Email__c": payload.shipping_info_contact_email,
+    "Billing_Phone__c": payload.shipping_info_contact_phone, // Needs improvemnet
+    "Billing_Fax__c": payload.shipping_info_contact_fax,
+    "BillingStreet": (payload.shipping_address_street_address ++ " " ++ payload.shipping_address_line2),
+    "BillingCity": payload.shipping_address_city,
+    "BillingState": payload.shipping_address_state,
+    "BillingPostalCode": payload.shipping_address_zip,
+    "BillingCountry": payload.shipping_address_country,
+    "Ship_To_Location__c": true 
 }]]></ee:set-variable>
-						<ee:set-variable variableName="shipContact" ><![CDATA[%dw 2.0
+
+						<ee:set-variable variableName="shipContact"><![CDATA[%dw 2.0
 output application/json
 var nameSize = sizeOf(payload.shipping_info_contact_name splitBy " ")
 var fName = if(nameSize == 1)("")

@@ -169,6 +169,26 @@ output application/json
         }
     ]
     ++(
+    	if(vars.shipAcc.ShipAccID != null)([{
+    		"method" : "PATCH",
+			"url": "/services/data/v58.0/sobjects/Account/" ++ vars.shipAcc.ShipAccID,
+            "referenceId": "refShippingAccountPatch",
+            "body": {
+				"Ship_To_Location__c": vars.shipAcc.ShipAcc_cb
+			}
+    	}]) else ([])
+    )
+	++(
+    	if(vars.billAcc.BillAccID != null)([{
+    		"method": "PATCH",
+            "url": "/services/data/v58.0/sobjects/Account/" ++ vars.billAcc.BillAccID,
+            "referenceId": "refBillingAccountPatch",
+            "body": {
+				"Bill_To_Location__c": vars.billAcc.BillAcc_cb
+			}
+    	}]) else ([])
+    )
+    ++(
     	if(vars.shipAcc.ShipAccID == null)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Account",
@@ -307,6 +327,26 @@ output application/json
         }
     ]
     ++(
+    	if(vars.shipAcc.ShipAccID != null)([{
+    		"method" : "PATCH",
+			"url": "/services/data/v58.0/sobjects/Account/" ++ vars.shipAcc.ShipAccID,
+            "referenceId": "refShippingAccountPatch",
+            "body": {
+				"Ship_To_Location__c": vars.shipAcc.ShipAcc_cb
+			}
+    	}]) else ([])
+    )
+	++(
+    	if(vars.billAcc.BillAccID != null)([{
+    		"method": "PATCH",
+            "url": "/services/data/v58.0/sobjects/Account/" ++ vars.billAcc.BillAccID,
+            "referenceId": "refBillingAccountPatch",
+            "body": {
+				"Bill_To_Location__c": vars.billAcc.BillAcc_cb
+			}
+    	}]) else ([])
+    )
+    ++(
     	if(vars.shipAcc.ShipAccID == null)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Account",
@@ -424,6 +464,26 @@ output application/json
             "body": vars.refinedOppPayload
         }
     ]
+    ++(
+    	if(vars.shipAcc.ShipAccID != null)([{
+    		"method" : "PATCH",
+			"url": "/services/data/v58.0/sobjects/Account/" ++ vars.shipAcc.ShipAccID,
+            "referenceId": "refShippingAccountPatch",
+            "body": {
+				"Ship_To_Location__c": vars.shipAcc.ShipAcc_cb
+			}
+    	}]) else ([])
+    )
+	++(
+    	if(vars.billAcc.BillAccID != null)([{
+    		"method": "PATCH",
+            "url": "/services/data/v58.0/sobjects/Account/" ++ vars.billAcc.BillAccID,
+            "referenceId": "refBillingAccountPatch",
+            "body": {
+				"Bill_To_Location__c": vars.billAcc.BillAcc_cb
+			}
+    	}]) else ([])
+    )
     ++(
     	if(vars.shipAcc.ShipAccID == null)([{
     		"method": "POST",
