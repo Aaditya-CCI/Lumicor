@@ -138,7 +138,7 @@ output application/java
 [{
 	SBQQ__Product__c: vars.dummyProductId,
 	SBQQ__Quote__c: vars.quoteId,
-	Product_Detail__c: vars.productName,
+	Notes__c: vars.productName,
 	SBQQ__Quantity__c: payload."Case Quantity"
 }]]]></ee:set-payload>
 								</ee:message>
@@ -290,7 +290,7 @@ output application/java
 [{
 	SBQQ__Product__c: vars.dummyProductId,
 	SBQQ__Quote__c: vars.quoteId,
-	Product_Detail__c: vars.productName,
+	Notes__c: vars.productName,
 	SBQQ__Quantity__c: payload."Panel Quantity"
 }]]]></ee:set-payload>
 								</ee:message>
@@ -341,7 +341,7 @@ output application/java
 [{
 	SBQQ__Product__c: vars.dummyProductId,
 	SBQQ__Quote__c: vars.quoteId,
-	Product_Detail__c: vars.productName,
+	Notes__c: vars.productName,
 	SBQQ__Quantity__c: payload."Panel Quantity"
 }]]]></ee:set-payload>
 								</ee:message>

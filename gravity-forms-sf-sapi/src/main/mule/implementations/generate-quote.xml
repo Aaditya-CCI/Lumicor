@@ -261,7 +261,8 @@ output application/json
 	"Type": "Specifier - Undefined",
 	"Name": payload.architect_company,
 	"BillingState": payload.architect_company_state,	
-	"BillingPostalCode": payload.architect_company_ZIP
+	"BillingPostalCode": payload.architect_company_ZIP,
+	"Specifier__c": true
 }]]></ee:set-variable>
 								<ee:set-variable variableName="quote" ><![CDATA[%dw 2.0
 output application/json

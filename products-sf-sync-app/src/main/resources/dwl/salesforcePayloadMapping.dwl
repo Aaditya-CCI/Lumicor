@@ -50,6 +50,13 @@ fun MA3(Att1: String, Att2: String, Att3: String, inputPayload: Object) = do{
     ---
     str
 }
+
+fun CR1(Att: String, inputPayload: Object) = do{
+    var res = (inputPayload[Att] as String)
+    ---
+    ((res splitBy ",") map trim($)) joinBy "\n"
+}
+
 fun makeDescription(data: Object) = do{
     var descJSON = if(data.IMS_UserDef1 != null) read(data.IMS_UserDef1, "application/json")
                     else ({})
@@ -64,6 +71,7 @@ fun makeDescription(data: Object) = do{
             case "SA1" -> SA1(value.Attributes[0], data)
             case "MA1" -> MA1(value.Attributes, data)
             case "MA2" -> MA2(value.Attributes, data)
+            case "CR1" -> CR1(value.Attributes[0], data)
             case "MA3" -> MA3(value.Attributes[0], value.Attributes[1], value.Attributes[2], data)
             else -> "Ivalid Input"
         }
