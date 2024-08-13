@@ -60,5 +60,5 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
 		<secure-properties:encrypt algorithm="Blowfish" />
 	</secure-properties:config>
 	<configuration-properties doc:name="Configuration properties" doc:id="c77916df-81ce-429c-9d53-ddf77566a814" file="properties\config-${mule.env}.yaml" />
-	<api-gateway:autodiscovery apiId="19505729" ignoreBasePath="false" doc:name="API Autodiscovery" doc:id="2a175b01-4fe3-48aa-abee-53380907ba57" flowRef="products-mssql-sf-sync-app-main" />
+	<api-gateway:autodiscovery apiId="${api.id}" ignoreBasePath="false" doc:name="API Autodiscovery" doc:id="2a175b01-4fe3-48aa-abee-53380907ba57" flowRef="products-mssql-sf-sync-app-main" />
 </mule>
