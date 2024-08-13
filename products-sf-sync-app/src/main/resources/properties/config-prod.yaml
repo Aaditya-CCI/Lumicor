@@ -4,5 +4,5 @@ Database:
   User: "MuleSoftIntegration"
   
 Salesforce:
-  userName: "aaditya.duggal@lumicor.dev1"
-  TokenEndpoint: "https://test.salesforce.com/services/oauth2/token"
+  userName: "konark.saini@caeliusconsulting.com.lumicor.prod"
+  TokenEndpoint: "https://login.salesforce.com/services/oauth2/token"
