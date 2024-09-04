@@ -58,7 +58,7 @@ fun CR1(Att: String, inputPayload: Object) = do{
 }
 
 fun makeDescription(data: Object) = do{
-    var descJSON = if(data.IMS_UserDef1 != null) read(data.IMS_UserDef1, "application/json")
+    var descJSON = if(data.IMS_UserDef1 != null and data.IMS_UserDef1 != "") read(data.IMS_UserDef1, "application/json")
                     else ({})
     ---
     (descJSON mapObject ((value, key, index) -> (
