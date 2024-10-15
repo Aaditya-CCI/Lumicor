@@ -1,7 +1,7 @@
 salesforceComposite:
   client_id: "![FEyzOZInMh6WUYIK6tTeD1n1YzZgb7t69vxlYSYncopuN1yWnlapPkrYtyUOlEdhJiSgOGVsTp0aBwE+Yexgmm356g226wTmogcFcqHqtiNTLUziCA7mFw==]"
   client_secret: "![MTvB+dtzBOdZ+o9ehp6Rxp41gnzeOqsl4ocv0t7vyAPSNSikrRJeACl1maADhMbm+JWCGzFqvv8NEJrd2o1FgQlSAlnG9dki]"
-  password: "![E6WY97pM7LKoQxpsrnjh7Q==]"
-  securityToken: "![cfQAgL9Sbc07ka5kDSp/xPTA75KgU6f7x98Ssthn0jc=]"
+  password: "![E6WY97pM7LLj8KQTWVncpQ==]"
+  securityToken: "![rM2jL7+CBgt7CCl5zNtx2EyVI7XpuJQPa+59Y/uc2T8=]"
   
 #These are now prod configurations

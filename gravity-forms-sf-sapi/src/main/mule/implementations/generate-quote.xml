@@ -32,6 +32,10 @@ update field("billing_address_country") with payload.shipping_address_country)
 else (payload)]]></ee:set-payload>
 			</ee:message>
 			<ee:variables >
+				<ee:set-variable variableName="isBillingInfoDiff" ><![CDATA[%dw 2.0
+output application/json
+---
+if(payload.cb_is_billing_info_different1 != "") true else false]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
 		<ee:transform doc:name="stateCodeSettings" doc:id="6154ec37-a177-4331-9a89-2637795d9e66" >
@@ -112,8 +116,8 @@ update field("billing_address_state") with getStateCode(payload.billing_address_
 		<choice doc:name="Choice" doc:id="fae21729-066f-4598-aa1d-aa5ce3787ac2" >
 			<when expression="#[vars.existingOpportunity.Id != null]">
 				<logger level="INFO" doc:name="Logger" doc:id="baf3c3ed-e638-440a-8dbd-137aa0296d28" message='#["Opportunity Exists, Link a Quote to that"]'/>
-				<flow-ref doc:name="billing-account-contact" doc:id="339ae26d-a296-4194-8d2c-bf7bce30c7d0" name="common-cntct-quoteFlow"/>
-				<flow-ref doc:name="shipping-account-contact" doc:id="05d6451b-0e15-49d1-a87a-c7e93fb251ca" name="common-shipping-acc-cntctFlow"/>
+				<flow-ref doc:name="billing-account-contact" doc:id="339ae26d-a296-4194-8d2c-bf7bce30c7d0" name="common-cntct-quoteFlow" />
+				<flow-ref doc:name="shipping-account-contact" doc:id="05d6451b-0e15-49d1-a87a-c7e93fb251ca" name="common-shipping-acc-cntctFlow" />
 				<ee:transform doc:name="var: quote" doc:id="81164108-875a-4c8d-a1f2-3b8204321deb" >
 					<ee:message >
 					</ee:message>
@@ -148,8 +152,8 @@ output application/json
     "Special_Shipping_Instructions__c": payload.shipping_info_special_instructions,
     "Primary_Contact__c": if(vars.billContact.BillContactID != null)(vars.billContact.BillContactID) else ("@{refBillingContact.id}"),
     "SBQQ__Account__c": if(vars.billAcc.BillAccID != null)(vars.billAcc.BillAccID) else ("@{refBillingAccount.id}"),
-    "Ship_To_Account__c": if(vars.shipAcc.ShipAccID != null)(vars.shipAcc.ShipAccID) else ("@{refShippingAccount.id}"),
-    "Ship_To_Contact__c": if(vars.shipContact.ShipContactID != null)(vars.shipContact.ShipContactID) else ("@{refShippingContact.id}")
+    "Ship_To_Account__c": if(vars.shipAcc.ShipAccID != null)(vars.shipAcc.ShipAccID) else if(vars.isBillingInfoDiff == false)("@{refBillingAccount.id}") else("@{refShippingAccount.id}"),
+    "Ship_To_Contact__c": if(vars.shipContact.ShipContactID != null)(vars.shipContact.ShipContactID) else if(vars.isBillingInfoDiff == false)("@{refBillingContact.id}") else("@{refShippingContact.id}")
 }]]></ee:set-variable>
 					</ee:variables>
 				</ee:transform>
@@ -189,7 +193,7 @@ output application/json
     	}]) else ([])
     )
     ++(
-    	if(vars.shipAcc.ShipAccID == null)([{
+    	if(vars.shipAcc.ShipAccID == null and vars.isBillingInfoDiff == true)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Account",
             "referenceId": "refShippingAccount",
@@ -197,7 +201,7 @@ output application/json
     	}]) else ([])
     )
     ++(
-    	if(vars.shipContact.ShipContactID == null)([{
+    	if(vars.shipContact.ShipContactID == null and vars.isBillingInfoDiff == true)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Contact",
             "referenceId": "refShippingContact",
@@ -205,7 +209,7 @@ output application/json
     	}]) else ([])
     )
     ++(
-    	if(vars.billAcc.BillAccID == null)([{
+    	if(vars.billAcc.BillAccID == null and vars.isBillingInfoDiff == true)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Account",
             "referenceId": "refBillingAccount",
@@ -213,7 +217,23 @@ output application/json
     	}]) else ([])
     )
     ++(
-    	if(vars.billContact.BillContactID == null)([{
+    	if(vars.billContact.BillContactID == null and vars.isBillingInfoDiff == true)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Contact",
+            "referenceId": "refBillingContact",
+            "body": (vars.billContact -- {"BillContactID": null})
+    	}]) else ([])
+    )
+	++(
+    	if(vars.billAcc.BillAccID == null and vars.isBillingInfoDiff == false)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Account",
+            "referenceId": "refBillingAccount",
+            "body": ((vars.billAcc -- {"BillAccID": null}) ++ {"Ship_To_Location__c" : true})
+    	}]) else ([])
+    )
+	++(
+    	if(vars.billContact.BillContactID == null and vars.isBillingInfoDiff == false)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Contact",
             "referenceId": "refBillingContact",
@@ -228,7 +248,11 @@ output application/json
             "body": vars.quote
         }
     ]
-}]]></ee:set-variable>
+}
+
+
+
+]]></ee:set-variable>
 					</ee:variables>
 				</ee:transform>
 				<salesforce-composite:execute-composite-request doc:name="dynamic-composite-call" doc:id="80b1bd82-181f-4e45-b195-38face2b981e" config-ref="Salesforce_Composite_Config" target="compQueryRes" >
@@ -294,8 +318,8 @@ output application/json
     "Special_Shipping_Instructions__c": payload.shipping_info_special_instructions,
     "Primary_Contact__c": if(vars.billContact.BillContactID != null)(vars.billContact.BillContactID) else ("@{refBillingContact.id}"),
     "SBQQ__Account__c": if(vars.billAcc.BillAccID != null)(vars.billAcc.BillAccID) else ("@{refBillingAccount.id}"),
-    "Ship_To_Account__c": if(vars.shipAcc.ShipAccID != null)(vars.shipAcc.ShipAccID) else ("@{refShippingAccount.id}"),
-    "Ship_To_Contact__c": if(vars.shipContact.ShipContactID != null)(vars.shipContact.ShipContactID) else ("@{refShippingContact.id}")
+    "Ship_To_Account__c": if(vars.shipAcc.ShipAccID != null)(vars.shipAcc.ShipAccID) else if(vars.isBillingInfoDiff == false)("@{refBillingAccount.id}") else("@{refShippingAccount.id}"),
+    "Ship_To_Contact__c": if(vars.shipContact.ShipContactID != null)(vars.shipContact.ShipContactID) else if(vars.isBillingInfoDiff == false)("@{refBillingContact.id}") else("@{refShippingContact.id}")
 }]]></ee:set-variable>
 					</ee:variables>
 				</ee:transform>
@@ -348,7 +372,7 @@ output application/json
     	}]) else ([])
     )
     ++(
-    	if(vars.shipAcc.ShipAccID == null)([{
+    	if(vars.shipAcc.ShipAccID == null and vars.isBillingInfoDiff == true)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Account",
             "referenceId": "refShippingAccount",
@@ -356,7 +380,7 @@ output application/json
     	}]) else ([])
     )
     ++(
-    	if(vars.shipContact.ShipContactID == null)([{
+    	if(vars.shipContact.ShipContactID == null and vars.isBillingInfoDiff == true)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Contact",
             "referenceId": "refShippingContact",
@@ -364,7 +388,7 @@ output application/json
     	}]) else ([])
     )
     ++(
-    	if(vars.billAcc.BillAccID == null)([{
+    	if(vars.billAcc.BillAccID == null and vars.isBillingInfoDiff == true)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Account",
             "referenceId": "refBillingAccount",
@@ -372,7 +396,23 @@ output application/json
     	}]) else ([])
     )
     ++(
-    	if(vars.billContact.BillContactID == null)([{
+    	if(vars.billContact.BillContactID == null and vars.isBillingInfoDiff == true)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Contact",
+            "referenceId": "refBillingContact",
+            "body": (vars.billContact -- {"BillContactID": null})
+    	}]) else ([])
+    )
+	++(
+    	if(vars.billAcc.BillAccID == null and vars.isBillingInfoDiff == false)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Account",
+            "referenceId": "refBillingAccount",
+            "body": ((vars.billAcc -- {"BillAccID": null}) ++ {"Ship_To_Location__c" : true})
+    	}]) else ([])
+    )
+	++(
+    	if(vars.billContact.BillContactID == null and vars.isBillingInfoDiff == false)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Contact",
             "referenceId": "refBillingContact",
@@ -439,8 +479,8 @@ output application/json
     "Special_Shipping_Instructions__c": payload.shipping_info_special_instructions,
     "Primary_Contact__c": if(vars.billContact.BillContactID != null)(vars.billContact.BillContactID) else ("@{refBillingContact.id}"),
     "SBQQ__Account__c": if(vars.billAcc.BillAccID != null)(vars.billAcc.BillAccID) else ("@{refBillingAccount.id}"),
-    "Ship_To_Account__c": if(vars.shipAcc.ShipAccID != null)(vars.shipAcc.ShipAccID) else ("@{refShippingAccount.id}"),
-    "Ship_To_Contact__c": if(vars.shipContact.ShipContactID != null)(vars.shipContact.ShipContactID) else ("@{refShippingContact.id}")
+    "Ship_To_Account__c": if(vars.shipAcc.ShipAccID != null)(vars.shipAcc.ShipAccID) else if(vars.isBillingInfoDiff == false)("@{refBillingAccount.id}") else("@{refShippingAccount.id}"),
+    "Ship_To_Contact__c": if(vars.shipContact.ShipContactID != null)(vars.shipContact.ShipContactID) else if(vars.isBillingInfoDiff == false)("@{refBillingContact.id}") else("@{refShippingContact.id}")
 }]]></ee:set-variable>
 							</ee:variables>
 						</ee:transform>
@@ -486,7 +526,7 @@ output application/json
     	}]) else ([])
     )
     ++(
-    	if(vars.shipAcc.ShipAccID == null)([{
+    	if(vars.shipAcc.ShipAccID == null and vars.isBillingInfoDiff == true)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Account",
             "referenceId": "refShippingAccount",
@@ -494,7 +534,7 @@ output application/json
     	}]) else ([])
     )
     ++(
-    	if(vars.shipContact.ShipContactID == null)([{
+    	if(vars.shipContact.ShipContactID == null and vars.isBillingInfoDiff == true)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Contact",
             "referenceId": "refShippingContact",
@@ -502,7 +542,7 @@ output application/json
     	}]) else ([])
     )
     ++(
-    	if(vars.billAcc.BillAccID == null)([{
+    	if(vars.billAcc.BillAccID == null and vars.isBillingInfoDiff == true)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Account",
             "referenceId": "refBillingAccount",
@@ -510,7 +550,23 @@ output application/json
     	}]) else ([])
     )
     ++(
-    	if(vars.billContact.BillContactID == null)([{
+    	if(vars.billContact.BillContactID == null and vars.isBillingInfoDiff == true)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Contact",
+            "referenceId": "refBillingContact",
+            "body": (vars.billContact -- {"BillContactID": null})
+    	}]) else ([])
+    )
+	++(
+    	if(vars.billAcc.BillAccID == null and vars.isBillingInfoDiff == false)([{
+    		"method": "POST",
+            "url": "/services/data/v58.0/sobjects/Account",
+            "referenceId": "refBillingAccount",
+            "body": ((vars.billAcc -- {"BillAccID": null}) ++ {"Ship_To_Location__c" : true})
+    	}]) else ([])
+    )
+	++(
+    	if(vars.billContact.BillContactID == null and vars.isBillingInfoDiff == false)([{
     		"method": "POST",
             "url": "/services/data/v58.0/sobjects/Contact",
             "referenceId": "refBillingContact",
